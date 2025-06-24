@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Photo Maker (face-api.js)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        h1 {
+            color: #007bff;
+        }
+        #loading-message {
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #555;
+        }
+        #video-container {
+            position: relative;
+            width: 80vw; /* Adjust as needed */
+            max-width: 600px;
+            aspect-ratio: 4/3; /* Common camera aspect ratio */
+            background-color: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror the video for selfie-like view */
+            display: block; /* Remove extra space below video */
+        }
+        #overlay-box {
+            position: absolute;
+            border: 2px solid green;
+            box-sizing: border-box;
+            pointer-events: none; /* Allows clicks to pass through */
+            display: none; /* Hidden by default */
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+        button:disabled {
+            background-color: #a0c9ff;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        #output-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #passport-photo {
+            max-width: 180px; /* Slightly larger display for clarity */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none; /* Hidden by default */
+        }
+        canvas {
+            display: none; /* Hidden canvas for processing */
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+<body>
+    <h1>Passport Photo Maker</h1>
+    <div id="loading-message">Loading camera and models...</div>
+    <div id="video-container">
+        <video id="camera-stream" autoplay playsinline></video>
+        <div id="overlay-box"></div>
+    </div>
+    <button id="capture-button" disabled>Capture Photo</button>
+    <div id="output-container">
+        <h2>Your Passport Photo:</h2>
+        <img id="passport-photo" src="" alt="Passport Photo">
+    </div>
+
+    <canvas id="hidden-canvas"></canvas>
+
+    <script>
+        // JavaScript starts here, now inside the HTML
+        const video = document.getElementById('camera-stream');
+        const captureButton = document.getElementById('capture-button');
+        const outputPhoto = document.getElementById('passport-photo');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+        const overlayBox = document.getElementById('overlay-box');
+        const loadingMessage = document.getElementById('loading-message');
+        const context = hiddenCanvas.getContext('2d');
+
+        // Passport photo dimensions (standard - these are illustrative)
+        const PASSPORT_WIDTH = 350; // pixels
+        const PASSPORT_HEIGHT = 450; // pixels
+        const DESIRED_FACE_SCALE_HEIGHT = 0.7; // Head should occupy approx 70% of photo height
+        const DESIRED_FACE_OFFSET_TOP_RATIO = 0.1; // Head top should be approx 10% from top edge
+
+        // Detector options for face-api.js
+        const tinyFaceDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+        // Using CDN links for models
+        const MODELS_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/models'; 
+
+        // 1. Initialize Camera Stream
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    // Once video is playing, start detection and enable button
+                    loadingMessage.textContent = "Loading models...";
+                    loadModelsAndStartDetection(); // Call a new function to load models
+                };
+            } catch (err) {
+                console.error("Error accessing camera: ", err);
+                loadingMessage.textContent = "Error: Camera access denied or not available. Please ensure HTTPS and permissions.";
+                // Replaced alert with console log and message for better user experience in an iframe.
+                console.log("Could not access camera. Please ensure you have granted permissions and are on HTTPS.");
+            }
+        }
+
+        // 2. Load face-api.js Models
+        async function loadModelsAndStartDetection() {
+            try {
+                // Load the TinyFace Detector model
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL);
+                console.log("face-api.js TinyFace Detector model loaded.");
+                
+                loadingMessage.style.display = 'none'; // Hide loading message
+                captureButton.disabled = false; // Enable button
+                startFaceDetectionLoop(); // Start continuous detection
+            } catch (error) {
+                console.error("Error loading face-api.js models:", error);
+                loadingMessage.textContent = "Error loading face detection models. Check console for details.";
+                // Replaced alert with console log and message for better user experience in an iframe.
+                console.log("Failed to load face detection models. Please ensure CDN links are correct and accessible.");
+            }
+        }
+
+        // 3. Continuous Face Detection (for the overlay box)
+        async function startFaceDetectionLoop() {
+            let lastVideoTime = -1;
+
+            async function detectFaces() {
+                if (!video.paused && video.currentTime !== lastVideoTime) {
+                    lastVideoTime = video.currentTime;
+                    // Detect faces on the video element
+                    const detections = await faceapi.detectSingleFace(video, tinyFaceDetectorOptions);
+
+                    if (detections) {
+                        // Resize detection to video display size
+                        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                        const resizedDetection = faceapi.resizeResults(detections, displaySize);
+                        const box = resizedDetection.box;
+
+                        overlayBox.style.left = `${box.x}px`;
+                        overlayBox.style.top = `${box.y}px`;
+                        overlayBox.style.width = `${box.width}px`;
+                        overlayBox.style.height = `${box.height}px`;
+                        overlayBox.style.display = 'block';
+                    } else {
+                        overlayBox.style.display = 'none';
+                    }
+                }
+                requestAnimationFrame(detectFaces); // Keep detecting
+            }
+            requestAnimationFrame(detectFaces);
+        }
+
+        // 4. Capture and Process Photo
+        captureButton.addEventListener('click', async () => {
+            if (!faceapi.nets.tinyFaceDetector.isLoaded) { // Check if model is loaded
+                // Replaced alert with console log and message for better user experience in an iframe.
+                console.log("Face detection models not loaded yet. Please wait or refresh.");
+                return;
+            }
+
+            // Draw video frame to hidden canvas at its native resolution
+            hiddenCanvas.width = video.videoWidth;
+            hiddenCanvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+            // Perform face detection on the captured canvas frame
+            const detections = await faceapi.detectSingleFace(hiddenCanvas, tinyFaceDetectorOptions);
+
+            if (detections) {
+                const face = detections.box; // Get the detected face bounding box
+
+                const originalImageWidth = hiddenCanvas.width;
+                const originalImageHeight = hiddenCanvas.height;
+
+                // --- Passport Cropping Logic (Same as before, using face-api.js box) ---
+                const targetFaceHeightPx = PASSPORT_HEIGHT * DESIRED_FACE_SCALE_HEIGHT;
+                const scaleFactor = targetFaceHeightPx / face.height;
+                const headTopInPassportY = PASSPORT_HEIGHT * DESIRED_FACE_OFFSET_TOP_RATIO;
+
+                let cropY = face.y - (headTopInPassportY / scaleFactor);
+                cropY = Math.max(0, cropY);
+
+                let cropHeight = PASSPORT_HEIGHT / scaleFactor;
+                let cropWidth = PASSPORT_WIDTH / scaleFactor;
+
+                const faceCenterX = face.x + face.width / 2;
+                let cropX = faceCenterX - (cropWidth / 2);
+
+                cropX = Math.max(0, cropX);
+                if (cropX + cropWidth > originalImageWidth) {
+                    cropX = originalImageWidth - cropWidth;
+                    if (cropX < 0) cropX = 0;
+                }
+                
+                if (cropY + cropHeight > originalImageHeight) {
+                    cropY = originalImageHeight - cropHeight;
+                    if (cropY < 0) cropY = 0;
+                }
+
+                const passportCanvas = document.createElement('canvas');
+                passportCanvas.width = PASSPORT_WIDTH;
+                passportCanvas.height = PASSPORT_HEIGHT;
+                const passportContext = passportCanvas.getContext('2d');
+
+                passportContext.drawImage(
+                    hiddenCanvas,
+                    cropX, cropY, cropWidth, cropHeight,
+                    0, 0, PASSPORT_WIDTH, PASSPORT_HEIGHT
+                );
+
+                outputPhoto.src = passportCanvas.toDataURL('image/png');
+                outputPhoto.style.display = 'block';
+
+            } else {
+                // Replaced alert with console log and message for better user experience in an iframe.
+                console.log("No face detected in the captured photo! Please try again.");
+            }
+        });
+
+        // Initialize camera when the window loads
+        window.addEventListener('load', initCamera);
+    </script>
+</body>
+</html>
