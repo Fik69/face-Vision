@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Photo Maker</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter for consistency */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5; /* Light background */
+            color: #2c3e50; /* Darker text */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #3498db; /* Blue heading */
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            text-align: center;
+        }
+        #loading-message {
+            margin-top: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #555;
+            text-align: center;
+        }
+        #video-container {
+            position: relative;
+            width: 90vw; /* Wider for mobile */
+            max-width: 600px;
+            aspect-ratio: 4/3; /* Common camera aspect ratio */
+            background-color: #000; /* Black background for video */
+            border-radius: 12px; /* More rounded corners */
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2); /* More prominent shadow */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror the video for selfie-like view */
+            display: block; /* Remove extra space below video */
+        }
+        #overlay-box {
+            position: absolute;
+            border: 3px solid #2ecc71; /* Green border, slightly thicker */
+            box-sizing: border-box;
+            pointer-events: none; /* Allows clicks to pass through */
+            display: none; /* Hidden by default */
+            border-radius: 6px; /* Rounded corners for overlay */
+        }
+        button {
+            padding: 14px 30px; /* Larger padding */
+            font-size: 1.2em; /* Larger font */
+            background-image: linear-gradient(to right, #3498db, #2980b9); /* Gradient button */
+            color: white;
+            border: none;
+            border-radius: 8px; /* More rounded button */
+            cursor: pointer;
+            transition: all 0.3s ease; /* Smooth transitions for all properties */
+            margin-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); /* Button shadow */
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        button:disabled {
+            background-image: linear-gradient(to right, #a0c9ff, #8cb3e0);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        button:hover:not(:disabled) {
+            background-image: linear-gradient(to right, #2980b9, #3498db);
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+        }
+        #output-container {
+            margin-top: 30px;
+            text-align: center;
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            width: 90vw;
+            max-width: 300px; /* Keep photo container reasonable size */
+        }
+        #output-container h2 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        #passport-photo {
+            max-width: 100%; /* Make sure it fits its container */
+            height: auto;
+            border: 2px solid #bdc3c7; /* Lighter border */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none; /* Hidden by default */
+        }
+        canvas {
+            display: none; /* Hidden canvas for processing */
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            #video-container {
+                width: 70vw;
+            }
+            button {
+                font-size: 1.3em;
+                padding: 15px 35px;
+            }
+            #output-container {
+                max-width: 350px;
+            }
+        }
+    </style>
+    <!-- Load face-api.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+<body>
+    <h1>Passport Photo Maker</h1>
+    <div id="loading-message">Loading camera and models...</div>
+    <div id="video-container">
+        <video id="camera-stream" autoplay playsinline></video>
+        <div id="overlay-box"></div>
+    </div>
+    <button id="capture-button" disabled>Capture Photo</button>
+    <div id="output-container">
+        <h2>Your Passport Photo:</h2>
+        <img id="passport-photo" src="" alt="Passport Photo">
+    </div>
+
+    <canvas id="hidden-canvas"></canvas>
+
+    <script>
+        // --- Core Application Logic ---
+        const video = document.getElementById('camera-stream');
+        const captureButton = document.getElementById('capture-button');
+        const outputPhoto = document.getElementById('passport-photo');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+        const overlayBox = document.getElementById('overlay-box');
+        const loadingMessage = document.getElementById('loading-message');
+        const context = hiddenCanvas.getContext('2d');
+
+        // Passport photo dimensions (standard: 35x45 mm, roughly 350x450 pixels at 100 DPI)
+        const PASSPORT_WIDTH = 350; // pixels
+        const PASSPORT_HEIGHT = 450; // pixels
+
+        // How much of the photo the face should occupy (e.g., 70-80% height is common)
+        const DESIRED_FACE_SCALE_HEIGHT = 0.75; 
+        // How far from the top the head should begin (e.g., 10-12% from top)
+        const DESIRED_FACE_OFFSET_TOP_RATIO = 0.1; 
+
+        // face-api.js TinyFaceDetector options (tuned for performance)
+        const tinyFaceDetectorOptions = new faceapi.TinyFaceDetectorOptions({ 
+            inputSize: 224, // Smaller input for faster detection on mobile
+            scoreThreshold: 0.5 // Minimum confidence to detect a face
+        });
+
+        // The path where face-api.js models are hosted relative to index.html
+        // For GitHub Pages, this means a 'models' folder next to your index.html
+        const MODELS_URL = './models'; 
+
+        /**
+         * Initializes the camera stream and sets it as the source for the video element.
+         * Enables the capture button once the camera is ready.
+         */
+        async function initCamera() {
+            try {
+                // Request access to the user's front-facing camera
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream;
+
+                // When video metadata is loaded, play the video and load ML models
+                video.onloadedmetadata = () => {
+                    video.play();
+                    loadingMessage.textContent = "Loading AI models...";
+                    loadModelsAndStartDetection(); // Proceed to load models
+                };
+            } catch (err) {
+                console.error("Error accessing camera: ", err);
+                loadingMessage.textContent = "Error: Camera access denied or not available. Please ensure HTTPS and granted permissions.";
+                alert("Could not access camera. Please ensure you have granted permissions and are on HTTPS.");
+                captureButton.disabled = true; // Keep button disabled on error
+            }
+        }
+
+        /**
+         * Loads the necessary face-api.js models from the specified URL.
+         * Once loaded, it enables the capture button and starts the detection loop.
+         */
+        async function loadModelsAndStartDetection() {
+            try {
+                // Load the TinyFace Detector model (includes the weights and JSON)
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL);
+                console.log("face-api.js TinyFace Detector model loaded successfully.");
+                
+                loadingMessage.style.display = 'none'; // Hide loading message
+                captureButton.disabled = false; // Enable the capture button
+                startFaceDetectionLoop(); // Start continuous face detection for the overlay
+            } catch (error) {
+                console.error("Error loading face-api.js models:", error);
+                loadingMessage.textContent = "Error loading AI models. Check console and 'models' folder setup.";
+                alert("Failed to load face detection models. Ensure 'models' folder exists with the correct files and is accessible.");
+                captureButton.disabled = true; // Keep button disabled on error
+            }
+        }
+
+        /**
+         * Continuously detects faces in the video stream and updates the overlay box.
+         * Uses requestAnimationFrame for efficient looping.
+         */
+        async function startFaceDetectionLoop() {
+            let lastVideoTime = -1; // Track last video time to avoid redundant detections
+
+            async function detectFaces() {
+                // Only detect if video is playing and a new frame is available
+                if (!video.paused && video.currentTime !== lastVideoTime) {
+                    lastVideoTime = video.currentTime;
+                    // Detect a single face on the video element for real-time overlay
+                    const detections = await faceapi.detectSingleFace(video, tinyFaceDetectorOptions);
+
+                    if (detections) {
+                        // Resize the detection results to match the video element's display size
+                        const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                        const resizedDetection = faceapi.resizeResults(detections, displaySize);
+                        const box = resizedDetection.box;
+
+                        // Update the overlay box's position and size
+                        overlayBox.style.left = `${box.x}px`;
+                        overlayBox.style.top = `${box.y}px`;
+                        overlayBox.style.width = `${box.width}px`;
+                        overlayBox.style.height = `${box.height}px`;
+                        overlayBox.style.display = 'block'; // Show the overlay
+                    } else {
+                        overlayBox.style.display = 'none'; // Hide if no face detected
+                    }
+                }
+                requestAnimationFrame(detectFaces); // Continue the loop
+            }
+            requestAnimationFrame(detectFaces); // Start the first frame of the loop
+        }
+
+        /**
+         * Event listener for the capture button.
+         * Captures the current video frame, detects faces, crops it to passport size, and displays it.
+         */
+        captureButton.addEventListener('click', async () => {
+            // Ensure models are loaded before attempting detection
+            if (!faceapi.nets.tinyFaceDetector.isLoaded) {
+                alert("Face detection models not loaded yet. Please wait.");
+                return;
+            }
+
+            // Draw the current video frame to a hidden canvas at its native resolution
+            hiddenCanvas.width = video.videoWidth;
+            hiddenCanvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+            // Perform face detection on the captured static image
+            const detections = await faceapi.detectSingleFace(hiddenCanvas, tinyFaceDetectorOptions);
+
+            if (detections) {
+                const faceBox = detections.box; // Get the detected face bounding box (x, y, width, height)
+
+                // --- Passport Cropping Logic ---
+                // Calculate the target height of the face within the final passport photo
+                const targetFaceHeightPx = PASSPORT_HEIGHT * DESIRED_FACE_SCALE_HEIGHT;
+
+                // Calculate the scaling factor needed to make the detected face match the target size
+                const scaleFactor = targetFaceHeightPx / faceBox.height;
+
+                // Calculate the ideal starting Y-coordinate for the crop on the original image
+                // This ensures the top of the head is at the desired offset in the final passport photo
+                const idealCropY = faceBox.y - (PASSPORT_HEIGHT * DESIRED_FACE_OFFSET_TOP_RATIO / scaleFactor);
+
+                // Calculate the actual crop dimensions needed on the original image,
+                // maintaining the passport photo's aspect ratio (PASSPORT_WIDTH / PASSPORT_HEIGHT)
+                const cropHeightOnOriginal = PASSPORT_HEIGHT / scaleFactor;
+                const cropWidthOnOriginal = PASSPORT_WIDTH / scaleFactor;
+
+                // Center the crop horizontally around the detected face's center
+                const faceCenterXOnOriginal = faceBox.x + faceBox.width / 2;
+                const idealCropX = faceCenterXOnOriginal - (cropWidthOnOriginal / 2);
+
+                // Apply boundary checks to ensure the crop region doesn't go outside the original image
+                let finalCropX = Math.max(0, idealCropX);
+                let finalCropY = Math.max(0, idealCropY);
+                let finalCropWidth = cropWidthOnOriginal;
+                let finalCropHeight = cropHeightOnOriginal;
+
+                // Adjust if crop extends beyond original image width
+                if (finalCropX + finalCropWidth > hiddenCanvas.width) {
+                    finalCropX = hiddenCanvas.width - finalCropWidth;
+                    if (finalCropX < 0) finalCropX = 0; // If cropWidth is larger than original image
+                }
+                // Adjust if crop extends beyond original image height
+                if (finalCropY + finalCropHeight > hiddenCanvas.height) {
+                    finalCropY = hiddenCanvas.height - finalCropHeight;
+                    if (finalCropY < 0) finalCropY = 0; // If cropHeight is larger than original image
+                }
+
+                // Create a new canvas to hold the final passport photo
+                const passportCanvas = document.createElement('canvas');
+                passportCanvas.width = PASSPORT_WIDTH;
+                passportCanvas.height = PASSPORT_HEIGHT;
+                const passportContext = passportCanvas.getContext('2d');
+
+                // Draw the determined cropped section from the hidden canvas onto the passport canvas,
+                // scaling it up or down to the final passport photo dimensions.
+                passportContext.drawImage(
+                    hiddenCanvas,
+                    finalCropX, finalCropY, finalCropWidth, finalCropHeight, // Source rectangle on original image
+                    0, 0, PASSPORT_WIDTH, PASSPORT_HEIGHT // Destination rectangle on passport photo canvas
+                );
+
+                // Display the generated passport photo
+                outputPhoto.src = passportCanvas.toDataURL('image/png');
+                outputPhoto.style.display = 'block';
+
+            } else {
+                // Inform the user if no face was detected in the captured frame
+                alert("No face detected in the captured photo! Please try again.");
+            }
+        });
+
+        // Start the camera and model loading process when the window has fully loaded
+        window.addEventListener('load', initCamera);
+    </script>
+</body>
+</html>
