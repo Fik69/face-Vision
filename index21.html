@@ -177,9 +177,17 @@
             align-items: center;
         }
 
+        /* Container for each label-select pair to stack them */
+        .select-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center the label and select */
+            width: 50%; /* Each takes half width of their flex container */
+        }
+
         .select-label {
-            color: #00BFFF; /* Electric blue for labels for better pop */
-            font-size: 0.85em;
+            color: #909090; /* Softer grey for labels */
+            font-size: 0.75em; /* Smaller font for labels */
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 5px; /* Space between label and dropdown */
@@ -187,7 +195,7 @@
 
         /* Dropdowns - sleek, dark, functional, with blur */
         select {
-            padding: 10px 15px; /* Reduced padding for shorter height */
+            padding: 12px 18px; /* Increased padding for slightly larger height */
             font-size: 0.9em;
             border: 1px solid #00BFFF; /* Electric blue border */
             border-radius: 4px;
@@ -201,10 +209,8 @@
             background-repeat: no-repeat;
             background-position: right 10px center;
             background-size: 8px auto;
-            width: 50%; /* Each takes half width of their flex container */
+            width: 100%; /* Take full width of its .select-item parent */
             box-sizing: border-box;
-            /* backdrop-filter: blur(5px); */ /* Chic blur effect - removed for select */
-            /* -webkit-backdrop-filter: blur(5px); */ /* For Safari - removed for select */
         }
 
         select:focus {
@@ -214,8 +220,6 @@
         }
 
         /* Developer options section - NOW INLINE */
-        /* Removed #developer-options-section styling */
-
         h3 {
             color: #C0C0C0; /* Muted silver for heading */
             font-size: 1.1em;
@@ -235,8 +239,6 @@
             max-width: 400px; /* Increased max-width */
             box-shadow: 0 0 8px rgba(0, 191, 255, 0.1); /* Subtle glow for groups */
             border-radius: 4px; /* Slight rounding for groups */
-            /* backdrop-filter: blur(3px); */ /* Slightly less blur than section - removed */
-            /* -webkit-backdrop-filter: blur(3px); */ /* For Safari - removed */
         }
         .slider-group:last-child {
             margin-bottom: 0;
@@ -346,7 +348,7 @@
             max-width: 95vw;
             max-height: 95vh;
             overflow-y: auto;
-            position: relative;
+            position: relative; /* Needed for absolute positioning of close button */
             transform: translateY(10px);
             transition: transform 0.25s ease-out;
             color: #e0e0e0;
@@ -355,10 +357,12 @@
 
         .modal-content h2 {
             color: #00FFFF; /* Cyan for prominence */
-            margin-bottom: 15px;
-            font-size: 1.5em;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
+            margin-top: 10px; /* Smaller top margin */
+            margin-bottom: 10px; /* Smaller bottom margin */
+            font-size: 1.2em; /* Smaller font size */
+            font-weight: bold; /* Keep bold */
+            text-transform: none; /* No uppercase for more minimal look */
+            letter-spacing: 0.02em; /* Smaller letter spacing */
         }
 
         #modal-passport-photo {
@@ -413,14 +417,41 @@
 
 
         /* Modal specific button colors */
-        .modal-close-button {
-            background-color: #4A4A4A;
-            border-color: #00BFFF; /* Electric Blue border */
+        .modal-close-button-x { /* New class for the X button */
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #202020; /* Dark background for the box */
+            border: 1px solid #FF0000; /* Red border */
+            color: #FF0000; /* Red color for the X */
+            width: 35px; /* Square box */
+            height: 35px; /* Square box */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8em; /* Larger X */
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0; /* Remove padding for better control of size */
+            line-height: 1; /* Center X vertically */
+            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.15s ease-in-out;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.4); /* Subtle red glow */
+            border-radius: 4px; /* Slight rounding for the box */
         }
-        .modal-close-button:hover:not(:disabled) {
-            background-color: #606060;
-            box-shadow: 0 0 8px rgba(0, 191, 255, 0.3); /* Electric Blue glow */
+        .modal-close-button-x:hover {
+            background-color: #300000; /* Darker red background on hover */
+            border-color: #FF4444; /* Lighter red on hover */
+            color: #FF4444; /* Lighter red on hover */
+            transform: scale(1.05); /* Slight scale on hover */
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
         }
+        .modal-close-button-x:active {
+            background-color: #100000; /* Even darker red on active */
+            border-color: #CC0000; /* Darker red on active */
+            color: #CC0000; /* Darker red on active */
+            transform: scale(0.95);
+        }
+
         .reprocess-button {
             background-color: #008000;
             border-color: #00BFFF; /* Electric Blue border */
@@ -463,11 +494,11 @@
             font-size: 0.85em;
             margin-bottom: 15px;
         }
-        #custom-message-box-overlay button {
+        #custom-message-box-overlay .modal-button-group button { /* Targeting the OK button specifically */
             background-color: #4A4A4A;
             border-color: #00BFFF; /* Electric Blue border */
         }
-        #custom-message-box-overlay button:hover:not(:disabled) {
+        #custom-message-box-overlay .modal-button-group button:hover:not(:disabled) {
              background-color: #606060;
              box-shadow: 0 0 8px rgba(0, 173, 239, 0.3);
         }
@@ -490,10 +521,14 @@
 
         <div class="select-group-container">
             <div class="select-group-row">
-                <label for="resolution-select" class="select-label">Resolution:</label>
-                <select id="resolution-select" disabled></select>
-                 <label for="country-select" class="select-label">Aspect Ratio:</label>
-                <select id="country-select" disabled></select>
+                <div class="select-item">
+                    <label for="resolution-select" class="select-label">Resolution:</label>
+                    <select id="resolution-select" disabled></select>
+                </div>
+                 <div class="select-item">
+                    <label for="country-select" class="select-label">Country/Type:</label>
+                    <select id="country-select" disabled></select>
+                </div>
             </div>
         </div>
 
@@ -521,30 +556,29 @@
 
     <div id="photo-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="modal-title">Your Passport Photo:</h2>
-            <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
-            <div class="modal-details">
+            <button class="modal-close-button-x">&times;</button> <div class="modal-details">
                 <p id="modal-country-spec"></p>
                 <p id="modal-resolution-spec"></p>
             </div>
+            <h2 id="modal-title">Your Passport Photo:</h2>
+            <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
 
+            <div class="modal-button-group">
+                <button id="download-button" class="download-button">Download Photo</button> <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
+            </div>
             <div class="modal-controls">
                 <select id="country-select-modal"></select>
                 <select id="resolution-select-modal"></select>
-            </div>
-            <div class="modal-button-group">
-                <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
-                <button id="download-button" class="download-button">Download Photo</button>
-                <button class="modal-close-button">Close</button>
             </div>
         </div>
     </div>
 
     <div id="custom-message-box-overlay" class="modal-overlay">
         <div class="modal-content">
-            <h3>Information</h3>
+            <button class="modal-close-button-x">&times;</button> <h3>Information</h3>
             <p></p>
-            <button class="modal-close-button">OK</button>
+            <div class="modal-button-group">
+                 <button>OK</button> </div>
         </div>
     </div>
 
@@ -565,7 +599,6 @@
         // Main controls (outside modals)
         const countrySelect = document.getElementById('country-select');
         const resolutionSelect = document.getElementById('resolution-select');
-        // const devSettingsButton = document.getElementById('dev-settings-button'); // REMOVED
 
         // Photo Modal elements
         const photoModal = document.getElementById('photo-modal');
@@ -573,16 +606,13 @@
         const modalPassportPhoto = document.getElementById('modal-passport-photo');
         const modalCountrySpec = document.getElementById('modal-country-spec');
         const modalResolutionSpec = document.getElementById('modal-resolution-spec');
-        const modalCloseButton = photoModal.querySelector('.modal-close-button');
+        // const modalCloseButton = photoModal.querySelector('.modal-close-button'); // REMOVED - replaced by X button
         const countrySelectModal = document.getElementById('country-select-modal');
         const resolutionSelectModal = document.getElementById('resolution-select-modal');
         const reprocessButton = document.getElementById('reprocess-button');
         const downloadButton = document.getElementById('download-button');
 
         // Developer Settings Modal elements (These now become direct references to elements in the main DOM)
-        // const devSettingsModal = document.getElementById('dev-settings-modal'); // REMOVED
-        // const devSettingsCloseButton = document.getElementById('dev-settings-close-button'); // REMOVED
-
         // Input Size controls
         const inputSizeSlider = document.getElementById('input-size-slider');
         const inputSizeNumber = document.getElementById('input-size-number');
@@ -596,7 +626,12 @@
         // Custom Message Box elements
         const customMessageBoxOverlay = document.getElementById('custom-message-box-overlay');
         const customMessageBoxContent = customMessageBoxOverlay.querySelector('.modal-content p');
-        const customMessageBoxButton = customMessageBoxOverlay.querySelector('button');
+        // const customMessageBoxButton = customMessageBoxOverlay.querySelector('button'); // Updated to use the correct selector due to new button wrapping
+        const customMessageBoxButton = customMessageBoxOverlay.querySelector('.modal-button-group button');
+
+
+        // Close buttons for modals (both the main photo modal and the custom message box)
+        const allCloseXButtons = document.querySelectorAll('.modal-close-button-x');
 
 
         // --- Configuration Variables ---
@@ -605,7 +640,7 @@
         const PASSPORT_SPECS = {
             'standard': { // Common for 35x45mm dimensions
                 value: 'standard',
-                name: 'Std (35x45mm)', // Shorter label
+                name: 'Standard (EU/Intl)', // More descriptive label
                 aspectRatio: 35 / 45, // width / height
                 faceScaleHeight: 0.75, // 70-80% of photo height for face
                 faceOffsetTopRatio: 0.1 // 10-12% from top for head start
@@ -624,19 +659,19 @@
         const OUTPUT_RESOLUTIONS = {
             'standard-res': {
                 value: 'standard-res',
-                name: 'Std Res', // Shorter label
+                name: 'Std Res (350x450)', // Shorter label with example size
                 baseWidth: 350,
                 baseHeight: 450
             },
             'high-res': {
                 value: 'high-res',
-                name: 'High Res', // Shorter label
+                name: 'High Res (700x900)', // Shorter label with example size
                 baseWidth: 700,
                 baseHeight: 900
             },
             'super-high-res': {
                 value: 'super-high-res',
-                name: 'Super Res', // Shorter label
+                name: 'Super Res (1050x1350)', // Shorter label with example size
                 baseWidth: 1050,
                 baseHeight: 1350
             }
@@ -722,7 +757,6 @@
             toggleDetectionButton.disabled = true;
             countrySelect.disabled = true;
             resolutionSelect.disabled = true;
-            // devSettingsButton.disabled = true; // REMOVED
 
             // Also disable the inline dev settings sliders
             inputSizeSlider.disabled = true;
@@ -766,7 +800,6 @@
                 toggleDetectionButton.disabled = true;
                 countrySelect.disabled = true;
                 resolutionSelect.disabled = true;
-                // devSettingsButton.disabled = true; // REMOVED
 
                 // Keep inline dev settings sliders disabled
                 inputSizeSlider.disabled = true;
@@ -802,11 +835,9 @@
                 
                 // Populate and enable dropdowns
                 populateSelect(countrySelect, PASSPORT_SPECS, 'standard');
-                populateSelect(resolutionSelect, OUTPUT_RESOLUTIONS, 'standard-res');
+                populateSelect(resolutionSelect, OUTPUT_RESOLUTIONS, 'standard'); // Using 'standard' as default key
                 countrySelect.disabled = false; 
                 resolutionSelect.disabled = false; 
-
-                // devSettingsButton.disabled = false; // REMOVED
 
                 // Enable inline dev settings controls (sliders and numbers)
                 inputSizeSlider.disabled = false;
@@ -834,7 +865,6 @@
                 toggleDetectionButton.disabled = true;
                 countrySelect.disabled = true;
                 resolutionSelect.disabled = true;
-                // devSettingsButton.disabled = true; // REMOVED
 
                 // Keep inline dev settings sliders disabled
                 inputSizeSlider.disabled = true;
@@ -1036,7 +1066,7 @@
             modalTitle.textContent = modalMessage;
             modalPassportPhoto.src = outputImageURL || ''; // Set src, clear if no image
             modalPassportPhoto.style.display = outputImageURL ? 'block' : 'none'; // Show/hide image
-            modalCountrySpec.textContent = `Country Spec: ${currentSpecs.name}`;
+            modalCountrySpec.textContent = `Country/Type: ${currentSpecs.name}`;
             modalResolutionSpec.textContent = `Output Resolution: ${currentOutputResolution.name}`;
 
             // Populate and set selected values for modal dropdowns for re-processing
@@ -1087,16 +1117,25 @@
             console.log(`Output resolution set to: ${currentOutputResolution.name}`);
         });
 
-        // REMOVED: Event listener for devSettingsButton as it's now inline.
-        // devSettingsButton.addEventListener('click', () => { ... });
-
         // --- Event Listeners (Photo Modal Controls) ---
 
         /**
          * Event listener for the photo modal close button.
          * Hides the modal.
          */
-        modalCloseButton.addEventListener('click', () => hideModal(photoModal));
+        // modalCloseButton.addEventListener('click', () => hideModal(photoModal)); // REMOVED
+
+        // Universal listener for all 'X' close buttons
+        allCloseXButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                // Find the closest modal-overlay parent and hide it
+                const modalToHide = event.target.closest('.modal-overlay');
+                if (modalToHide) {
+                    hideModal(modalToHide);
+                }
+            });
+        });
+
 
         /**
          * Event listener for the "Re-process Photo" button inside the photo modal.
@@ -1128,7 +1167,7 @@
                 modalTitle.textContent = "No face detected in the re-processed photo!";
                 modalPassportPhoto.style.display = 'none';
             }
-            modalCountrySpec.textContent = `Country Spec: ${newSpecs.name}`;
+            modalCountrySpec.textContent = `Country/Type: ${newSpecs.name}`;
             modalResolutionSpec.textContent = `Output Resolution: ${newResolution.name}`;
         });
 
@@ -1154,9 +1193,6 @@
         });
 
         // --- Event Listeners (Inline Developer Settings Controls) ---
-
-        // REMOVED: devSettingsCloseButton listener as modal is gone.
-        // devSettingsCloseButton.addEventListener('click', () => hideModal(devSettingsModal));
 
         /**
          * Event listeners for Input Size slider and number input (syncing and updating detector).

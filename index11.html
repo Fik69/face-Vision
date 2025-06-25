@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Photo Maker</title>
+    <style>
+        /* Base styles for the body */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter for consistency */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5; /* Light background */
+            color: #2c3e50; /* Darker text */
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in element's total width and height */
+            text-align: center; /* Center text globally */
+        }
+
+        /* Styling for the main heading */
+        h1 {
+            color: #3498db; /* Blue heading */
+            margin-bottom: 25px;
+            font-size: 2.2em;
+            text-align: center;
+        }
+
+        /* Styling for loading messages */
+        #loading-message {
+            margin-top: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #555;
+            text-align: center;
+        }
+
+        /* Container for the video stream and overlay */
+        #video-container {
+            position: relative;
+            width: 90vw; /* Wider for mobile */
+            max-width: 600px; /* Max width for larger screens */
+            aspect-ratio: 4/3; /* Common camera aspect ratio */
+            background-color: #000; /* Black background for video */
+            border-radius: 12px; /* More rounded corners */
+            overflow: hidden; /* Hide anything outside the rounded corners */
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2); /* More prominent shadow */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Styling for the video element */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the container while maintaining aspect ratio */
+            transform: scaleX(-1); /* Mirror the video for selfie-like view for front camera */
+            display: block; /* Remove extra space below video */
+        }
+
+        /* Overlay box for face detection feedback */
+        #overlay-box {
+            position: absolute;
+            border: 3px solid #2ecc71; /* Green border, slightly thicker */
+            box-sizing: border-box; /* Include border in element's total width and height */
+            pointer-events: none; /* Allows clicks to pass through to video */
+            display: none; /* Hidden by default */
+            border-radius: 6px; /* Rounded corners for overlay */
+        }
+
+        /* General button styling */
+        button {
+            padding: 14px 25px; /* Larger padding, slightly adjusted for multiple buttons */
+            font-size: 1.1em; /* Slightly smaller font for more buttons */
+            background-image: linear-gradient(to right, #3498db, #2980b9); /* Gradient button */
+            color: white;
+            border: none;
+            border-radius: 8px; /* More rounded button */
+            cursor: pointer;
+            transition: all 0.3s ease; /* Smooth transitions for all properties */
+            margin: 8px; /* Spacing between buttons and selects */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); /* Button shadow */
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            flex-shrink: 0; /* Prevent buttons from shrinking */
+        }
+
+        /* Styling for disabled buttons */
+        button:disabled {
+            background-image: linear-gradient(to right, #a0c9ff, #8cb3e0);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Hover effect for buttons */
+        button:hover:not(:disabled) {
+            background-image: linear-gradient(to right, #2980b9, #3498db);
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.25);
+        }
+
+        /* Container for all control buttons and selects */
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap; /* Allow elements to wrap to next line on small screens */
+            justify-content: center;
+            margin-bottom: 25px; /* Space below controls */
+            width: 95vw; /* Wider to accommodate more controls */
+            max-width: 700px;
+        }
+
+        /* Styling for all dropdowns (select elements) */
+        select {
+            padding: 12px 20px;
+            font-size: 1.05em; /* Slightly adjusted font size */
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            margin: 8px;
+            background-color: white;
+            color: #2c3e50;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none; /* Remove default dropdown arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232c3e50%22%20d%3D%22M287%2C197.6l-13.9%2C13.9L146.2%2C74.6L13.9%2C211.5L0%2C197.6L146.2%2C51.4L287%2C197.6z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+            min-width: 150px; /* Ensure a minimum width for dropdowns */
+        }
+
+        select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+
+        /* --- Modal Styling --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Dim background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Ensure it's on top */
+            visibility: hidden; /* Hidden by default */
+            opacity: 0;
+            transition: visibility 0.3s, opacity 0.3s;
+        }
+
+        .modal-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 90vw;
+            max-height: 90vh; /* Limit height for smaller screens */
+            overflow-y: auto; /* Enable scrolling if content overflows */
+            position: relative;
+            transform: translateY(20px); /* Initial slight offset for animation */
+            transition: transform 0.3s ease-out;
+        }
+
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0); /* Slide up animation */
+        }
+
+        .modal-content h2 {
+            color: #34495e;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        #modal-passport-photo {
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: block; /* Ensure image is block level */
+            margin-left: auto; /* Center image */
+            margin-right: auto; /* Center image */
+        }
+
+        .modal-details {
+            margin-bottom: 25px;
+            color: #555;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+
+        .modal-details p {
+            margin: 5px 0;
+        }
+
+        .modal-close-button {
+            background-image: linear-gradient(to right, #e74c3c, #c0392b); /* Red gradient for close button */
+        }
+
+        .modal-close-button:hover:not(:disabled) {
+            background-image: linear-gradient(to right, #c0392b, #e74c3c);
+        }
+
+        /* Hidden canvas for image processing */
+        canvas {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            #video-container {
+                width: 70vw;
+            }
+            button {
+                font-size: 1.2em; /* Restore slightly larger font on desktop */
+                padding: 14px 30px;
+            }
+            select {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+    <!-- Load face-api.js from local dist folder -->
+    <script src="face-api.js/dist/face-api.min.js"></script>
+</head>
+<body>
+    <h1>Passport Photo Maker</h1>
+    <div id="loading-message">Loading camera and models...</div>
+    
+    <div id="video-container">
+        <video id="camera-stream" autoplay playsinline></video>
+        <div id="overlay-box"></div>
+    </div>
+
+    <div class="controls-container">
+        <button id="capture-button" disabled>Capture Photo</button>
+        <button id="switch-camera-button" disabled>Switch Camera</button>
+        <button id="toggle-detection-button" disabled>Pause Detector</button>
+        
+        <select id="country-select" disabled>
+            <option value="standard">Standard (35x45mm)</option>
+            <option value="usa">USA (2x2 inch)</option>
+            <!-- Add more country options here as needed -->
+            <!-- <option value="turkey">Turkey</option> -->
+        </select>
+
+        <select id="skip-frames-select" disabled>
+            <option value="0">Detector: Every Frame</option>
+            <option value="1">Detector: Every 2nd Frame</option>
+            <option value="2" selected>Detector: Every 3rd Frame</option>
+            <option value="4">Detector: Every 5th Frame</option>
+        </select>
+
+        <select id="resolution-select" disabled>
+            <option value="standard-res" selected>Output: Standard Res (350/450px)</option>
+            <option value="high-res">Output: High Res (700/900px)</option>
+            <option value="super-high-res">Output: Super High Res (1050/1350px)</option>
+        </select>
+    </div>
+
+    <canvas id="hidden-canvas"></canvas>
+
+    <!-- Modal for displaying captured photo or messages -->
+    <div id="photo-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Your Passport Photo:</h2>
+            <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
+            <div class="modal-details">
+                <p id="modal-country-spec"></p>
+                <p id="modal-resolution-spec"></p>
+            </div>
+            <button class="modal-close-button">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Application Logic ---
+
+        // Get references to DOM elements
+        const video = document.getElementById('camera-stream');
+        const captureButton = document.getElementById('capture-button');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+        const overlayBox = document.getElementById('overlay-box');
+        const loadingMessage = document.getElementById('loading-message');
+        const context = hiddenCanvas.getContext('2d');
+        const switchCameraButton = document.getElementById('switch-camera-button');
+        const toggleDetectionButton = document.getElementById('toggle-detection-button');
+        const countrySelect = document.getElementById('country-select');
+        const skipFramesSelect = document.getElementById('skip-frames-select');
+        const resolutionSelect = document.getElementById('resolution-select');
+
+        // Modal elements
+        const photoModal = document.getElementById('photo-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalPassportPhoto = document.getElementById('modal-passport-photo');
+        const modalCountrySpec = document.getElementById('modal-country-spec');
+        const modalResolutionSpec = document.getElementById('modal-resolution-spec');
+        const modalCloseButton = photoModal.querySelector('.modal-close-button');
+
+
+        // --- Configuration Variables ---
+
+        // Passport photo specifications for different countries/types
+        const PASSPORT_SPECS = {
+            'canada': { // Canada Passport (50x70mm) - aspect ratio different from 35x45
+                width: 500,  // pixels (scaled for example, original is 50mm)
+                height: 700, // pixels (scaled for example, original is 70mm)
+                faceScaleHeight: 0.65, // Face height 31 to 36 mm (approx 62-72% of 50mm width, or 44-51% of 70mm height)
+                faceOffsetTopRatio: 0.08 // Crown of head to top edge must be 3 mm
+            },
+            'usa': { // US Passport is 2x2 inches (approx 600x600 pixels at 300 DPI)
+                width: 600,
+                height: 600,
+                faceScaleHeight: 0.70, // Face should be 1 to 1 3/8 inches (approx 60-75% height)
+                faceOffsetTopRatio: 0.08 // Head should be 1/8 to 1/2 inch from top
+            },
+            'australia': { // Australia Passport (35x45mm)
+                width: 350,
+                height: 450,
+                faceScaleHeight: 0.75, // Face from chin to crown 32mm to 36mm (approx 71-80% of 45mm height)
+                faceOffsetTopRatio: 0.1 // Top of head to top edge 2mm to 6mm (approx 4-13% of 45mm height)
+            },
+            'germany': { // Germany Passport (35x45mm biometric)
+                width: 350,
+                height: 450,
+                faceScaleHeight: 0.80, // Face should fill 70-80% of the photo height
+                faceOffsetTopRatio: 0.05 // Top of head should be close to the top edge
+            }
+        };
+
+        // Output resolution presets for the final passport photo
+        const OUTPUT_RESOLUTIONS = {
+            'standard-res': {
+                name: 'Standard Res (350/450px)',
+                baseWidth: 350,
+                baseHeight: 450
+            },
+            'high-res': {
+                name: 'High Res (700/900px)',
+                baseWidth: 700,
+                baseHeight: 900
+            },
+            'super-high-res': {
+                name: 'Super High Res (1050/1350px)',
+                baseWidth: 1050,
+                baseHeight: 1350
+            }
+        };
+
+        let currentSpecs = PASSPORT_SPECS[countrySelect.value]; // Default to selected country spec
+        let currentOutputResolution = OUTPUT_RESOLUTIONS[resolutionSelect.value]; // Default to selected resolution
+        let currentFramesToSkip = parseInt(skipFramesSelect.value); // Default to selected skip frames
+
+        let currentFacingMode = 'user'; // Start with front camera ('user' or 'environment')
+        let animationFrameId = null; // Stores the ID of the requestAnimationFrame for face detection
+        let isDetecting = true; // Flag to control face detection loop
+
+        // face-api.js TinyFaceDetector options (tuned for performance on mobile)
+        const tinyFaceDetectorOptions = new faceapi.TinyFaceDetectorOptions({
+            inputSize: 224, // Smaller input for faster detection on mobile
+            scoreThreshold: 0.5 // Minimum confidence to detect a face
+        });
+
+        // The path where face-api.js models are hosted relative to index.html
+        const MODELS_URL = 'face-api.js/weights';
+
+        // --- Utility Functions for Modal ---
+
+        /**
+         * Displays the modal with the given content.
+         * @param {string} title - The title for the modal.
+         * @param {string} imageUrl - The URL of the image to display (if any).
+         * @param {string} countryName - The name of the country spec used.
+         * @param {string} resolutionName - The name of the output resolution used.
+         */
+        function showModal(title, imageUrl, countryName, resolutionName) {
+            modalTitle.textContent = title;
+            if (imageUrl) {
+                modalPassportPhoto.src = imageUrl;
+                modalPassportPhoto.style.display = 'block';
+            } else {
+                modalPassportPhoto.style.display = 'none'; // Hide image if no URL
+            }
+            modalCountrySpec.textContent = `Country Spec: ${countryName}`;
+            modalResolutionSpec.textContent = `Output Resolution: ${resolutionName}`;
+            photoModal.classList.add('visible');
+        }
+
+        /**
+         * Hides the modal.
+         */
+        function hideModal() {
+            photoModal.classList.remove('visible');
+            modalPassportPhoto.src = ''; // Clear image src
+        }
+
+        // --- Camera Management ---
+
+        /**
+         * Initializes the camera stream based on the specified facingMode.
+         * Stops any existing stream before starting a new one.
+         * @param {string} facingMode - 'user' for front camera, 'environment' for rear camera.
+         */
+        async function initCamera(facingMode) {
+            // Stop any existing camera stream tracks to release the camera
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+
+            // Hide the overlay and disable controls while switching/loading
+            overlayBox.style.display = 'none';
+            captureButton.disabled = true;
+            switchCameraButton.disabled = true;
+            toggleDetectionButton.disabled = true;
+            countrySelect.disabled = true;
+            skipFramesSelect.disabled = true;
+            resolutionSelect.disabled = true;
+
+            loadingMessage.style.display = 'block';
+            loadingMessage.textContent = `Accessing ${facingMode === 'user' ? 'front' : 'rear'} camera...`;
+
+            try {
+                // Request access to the user's camera with specified facingMode
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                video.srcObject = stream;
+
+                // Update video transform based on facing mode for correct mirroring
+                video.style.transform = (facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)');
+                currentFacingMode = facingMode; // Update the global facing mode variable
+
+                // When video metadata is loaded, play the video and load ML models
+                video.onloadedmetadata = () => {
+                    video.play();
+                    loadingMessage.textContent = "Loading AI models...";
+                    loadModelsAndStartDetection(); // Proceed to load models (if not already loaded)
+                };
+            } catch (err) {
+                console.error("Error accessing camera: ", err);
+                loadingMessage.textContent = "Error: Camera access denied or not available. Please ensure HTTPS and granted permissions.";
+                // Display a user-friendly message, potentially in the modal or on screen
+                showModal("Camera Error", null, "N/A", "N/A");
+                modalTitle.textContent = "Camera Access Denied!";
+                modalCountrySpec.textContent = "Please allow camera access and ensure you are on HTTPS.";
+                modalResolutionSpec.textContent = ""; // Clear resolution spec
+                
+                // Ensure all buttons remain disabled on error
+                captureButton.disabled = true;
+                switchCameraButton.disabled = true;
+                toggleDetectionButton.disabled = true;
+                countrySelect.disabled = true;
+                skipFramesSelect.disabled = true;
+                resolutionSelect.disabled = true;
+            }
+        }
+
+        // --- Model Loading ---
+
+        /**
+         * Loads the necessary face-api.js models from the specified URL.
+         * Once loaded, it enables the UI controls and starts the detection loop.
+         */
+        async function loadModelsAndStartDetection() {
+            try {
+                // Check if models are already loaded to avoid re-loading
+                if (!faceapi.nets.tinyFaceDetector.isLoaded) {
+                    // Load the TinyFace Detector model (includes the weights and JSON)
+                    await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_URL);
+                    console.log("face-api.js TinyFace Detector model loaded successfully.");
+                } else {
+                    console.log("face-api.js models already loaded.");
+                }
+                
+                loadingMessage.style.display = 'none'; // Hide loading message
+                captureButton.disabled = false; // Enable the capture button
+                switchCameraButton.disabled = false; // Enable switch camera button
+                toggleDetectionButton.disabled = false; // Enable toggle detection button
+                countrySelect.disabled = false; // Enable country select dropdown
+                skipFramesSelect.disabled = false; // Enable skip frames dropdown
+                resolutionSelect.disabled = false; // Enable resolution dropdown
+
+                startFaceDetectionLoop(); // Start continuous face detection for the overlay
+            } catch (error) {
+                console.error("Error loading face-api.js models:", error);
+                loadingMessage.textContent = "Error loading AI models. Check console and 'face-api.js/weights' folder setup.";
+                // Display a user-friendly message in the modal
+                showModal("Model Loading Error", null, "N/A", "N/A");
+                modalTitle.textContent = "AI Model Loading Failed!";
+                modalCountrySpec.textContent = "Ensure 'face-api.js/weights' folder exists with correct files.";
+                modalResolutionSpec.textContent = ""; // Clear resolution spec
+
+                // Ensure all buttons remain disabled on error
+                captureButton.disabled = true;
+                switchCameraButton.disabled = true;
+                toggleDetectionButton.disabled = true;
+                countrySelect.disabled = true;
+                skipFramesSelect.disabled = true;
+                resolutionSelect.disabled = true;
+            }
+        }
+
+        // --- Face Detection Loop Control ---
+
+        /**
+         * Starts the continuous face detection loop using requestAnimationFrame.
+         * Only detects faces on a subset of frames to improve efficiency based on currentFramesToSkip.
+         */
+        async function startFaceDetectionLoop() {
+            // Only start if detection is enabled and not already running
+            if (isDetecting && !animationFrameId) { 
+                let lastVideoTime = -1; // Track last video time to avoid redundant detections
+                let frameCounter = 0; // Initialize a frame counter for skipping frames
+                
+                async function detectFaces() {
+                    // Only detect if video is playing, a new frame is available, and detection is enabled
+                    if (!video.paused && video.currentTime !== lastVideoTime && isDetecting) {
+                        lastVideoTime = video.currentTime; // Update last video time
+                        frameCounter++; // Increment the counter
+
+                        // Perform detection only on the Nth frame, where N = currentFramesToSkip + 1
+                        if (frameCounter % (currentFramesToSkip + 1) === 0) {
+                            const detections = await faceapi.detectSingleFace(video, tinyFaceDetectorOptions);
+
+                            if (detections) {
+                                // Resize the detection results to match the video element's display size
+                                const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
+                                const resizedDetection = faceapi.resizeResults(detections, displaySize);
+                                const box = resizedDetection.box;
+
+                                // Update the overlay box's position and size
+                                overlayBox.style.left = `${box.x}px`;
+                                overlayBox.style.top = `${box.y}px`;
+                                overlayBox.style.width = `${box.width}px`;
+                                overlayBox.style.height = `${box.height}px`;
+                                overlayBox.style.display = 'block'; // Show the overlay
+                            } else {
+                                overlayBox.style.display = 'none'; // Hide if no face detected
+                            }
+                        }
+                    }
+                    
+                    // Continue the loop only if detection is still enabled
+                    if (isDetecting) {
+                        animationFrameId = requestAnimationFrame(detectFaces);
+                    } else {
+                        animationFrameId = null; // Clear the animation frame ID when stopped
+                    }
+                }
+                animationFrameId = requestAnimationFrame(detectFaces); // Start the first frame of the loop
+                toggleDetectionButton.textContent = 'Pause Detector'; // Update button text
+                overlayBox.style.display = 'block'; // Ensure overlay is visible if starting
+            }
+        }
+
+        /**
+         * Stops the continuous face detection loop.
+         */
+        function stopFaceDetectionLoop() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId); // Cancel the scheduled animation frame
+                animationFrameId = null; // Reset the ID
+                overlayBox.style.display = 'none'; // Hide the overlay box
+                toggleDetectionButton.textContent = 'Start Detector'; // Update button text
+            }
+        }
+
+        // --- Event Listeners ---
+
+        /**
+         * Event listener for the capture button.
+         * Captures the current video frame, detects faces, crops it to passport size, and displays it in a modal.
+         */
+        captureButton.addEventListener('click', async () => {
+            // Ensure models are loaded before attempting detection
+            if (!faceapi.nets.tinyFaceDetector.isLoaded) {
+                showModal("Models Not Loaded", null, currentSpecs.name, currentOutputResolution.name);
+                modalTitle.textContent = "AI Models Not Ready!";
+                modalCountrySpec.textContent = "Please wait for the models to finish loading.";
+                modalResolutionSpec.textContent = "";
+                return;
+            }
+
+            // Draw the current video frame to a hidden canvas at its native resolution
+            hiddenCanvas.width = video.videoWidth;
+            hiddenCanvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+            // Perform face detection on the captured static image
+            const detections = await faceapi.detectSingleFace(hiddenCanvas, tinyFaceDetectorOptions);
+
+            let outputImageURL = null; // To store the generated photo URL
+            let modalMessage = "No face detected in the photo!"; // Default message for no detection
+
+            if (detections) {
+                const faceBox = detections.box; // Get the detected face bounding box (x, y, width, height)
+
+                // Determine final passport photo dimensions based on selected resolution AND country aspect ratio
+                let finalPassportWidth = currentOutputResolution.baseWidth;
+                let finalPassportHeight = currentOutputResolution.baseHeight;
+
+                // Adjust width/height to match the country's aspect ratio based on the largest dimension
+                // This ensures the aspect ratio is correct while trying to maintain selected resolution
+                if (currentSpecs.aspectRatio > 1) { // Wider than tall (e.g., if square is desired but base is rectangular)
+                    finalPassportHeight = finalPassportWidth / currentSpecs.aspectRatio;
+                } else { // Taller than wide or square
+                    finalPassportWidth = finalPassportHeight * currentSpecs.aspectRatio;
+                }
+                
+                // --- Passport Cropping Logic based on current country specs ---
+                const { faceScaleHeight: desiredFaceScaleHeight, faceOffsetTopRatio: desiredFaceOffsetTopRatio } = currentSpecs;
+
+                // Calculate the target height of the face within the final passport photo
+                const targetFaceHeightPx = finalPassportHeight * desiredFaceScaleHeight;
+
+                // Calculate the scaling factor needed to make the detected face match the target size
+                const scaleFactor = targetFaceHeightPx / faceBox.height;
+
+                // Calculate the ideal starting Y-coordinate for the crop on the original image
+                // This ensures the top of the head is at the desired offset in the final passport photo
+                const idealCropY = faceBox.y - (finalPassportHeight * desiredFaceOffsetTopRatio / scaleFactor);
+
+                // Calculate the actual crop dimensions needed on the original image,
+                // maintaining the passport photo's aspect ratio
+                const cropHeightOnOriginal = finalPassportHeight / scaleFactor;
+                const cropWidthOnOriginal = finalPassportWidth / scaleFactor;
+
+                // Center the crop horizontally around the detected face's center
+                const faceCenterXOnOriginal = faceBox.x + faceBox.width / 2;
+                const idealCropX = faceCenterXOnOriginal - (cropWidthOnOriginal / 2);
+
+                // Apply boundary checks to ensure the crop region doesn't go outside the original image
+                let finalCropX = Math.max(0, idealCropX);
+                let finalCropY = Math.max(0, idealCropY);
+                let finalCropWidth = cropWidthOnOriginal;
+                let finalCropHeight = cropHeightOnOriginal;
+
+                // Adjust if crop extends beyond original image width
+                if (finalCropX + finalCropWidth > hiddenCanvas.width) {
+                    finalCropX = hiddenCanvas.width - finalCropWidth;
+                    if (finalCropX < 0) finalCropX = 0; // If cropWidth is larger than original image after adjustment
+                }
+                // Adjust if crop extends beyond original image height
+                if (finalCropY + finalCropHeight > hiddenCanvas.height) {
+                    finalCropY = hiddenCanvas.height - finalCropHeight;
+                    if (finalCropY < 0) finalCropY = 0; // If cropHeight is larger than original image after adjustment
+                }
+
+                // Create a new canvas to hold the final passport photo
+                const passportCanvas = document.createElement('canvas');
+                passportCanvas.width = finalPassportWidth;
+                passportCanvas.height = finalPassportHeight;
+                const passportContext = passportCanvas.getContext('2d');
+
+                // Draw the determined cropped section from the hidden canvas onto the passport canvas,
+                // scaling it up or down to the final passport photo dimensions.
+                passportContext.drawImage(
+                    hiddenCanvas,
+                    finalCropX, finalCropY, finalCropWidth, finalCropHeight, // Source rectangle on original image
+                    0, 0, finalPassportWidth, finalPassportHeight // Destination rectangle on passport photo canvas
+                );
+
+                outputImageURL = passportCanvas.toDataURL('image/png');
+                modalMessage = "Your Passport Photo:";
+
+            } else {
+                // If no face detected, the default modalMessage will be used.
+            }
+            
+            // Show the modal with the result
+            showModal(modalMessage, outputImageURL, currentSpecs.name, currentOutputResolution.name);
+        });
+
+        /**
+         * Event listener for the "Switch Camera" button.
+         * Toggles between front and rear cameras and re-initializes the stream.
+         */
+        switchCameraButton.addEventListener('click', () => {
+            // Toggle facing mode: 'user' (front) or 'environment' (rear)
+            currentFacingMode = (currentFacingMode === 'user' ? 'environment' : 'user');
+            stopFaceDetectionLoop(); // Stop current detection to prevent errors during camera switch
+            initCamera(currentFacingMode); // Initialize camera with the new mode
+        });
+
+        /**
+         * Event listener for the "Pause/Start Detector" button.
+         * Toggles the face detection loop on or off.
+         */
+        toggleDetectionButton.addEventListener('click', () => {
+            isDetecting = !isDetecting; // Toggle the detection flag
+            if (isDetecting) {
+                startFaceDetectionLoop(); // Start the loop if enabled
+            } else {
+                stopFaceDetectionLoop(); // Stop the loop if disabled
+            }
+        });
+
+        /**
+         * Event listener for the country selection dropdown.
+         * Updates the current passport photo specifications based on user selection.
+         */
+        countrySelect.addEventListener('change', (event) => {
+            currentSpecs = PASSPORT_SPECS[event.target.value];
+            console.log(`Passport specs set to: ${currentSpecs.name}`);
+        });
+
+        /**
+         * Event listener for the skip frames selection dropdown.
+         * Updates the number of frames to skip for live face detection.
+         */
+        skipFramesSelect.addEventListener('change', (event) => {
+            currentFramesToSkip = parseInt(event.target.value);
+            console.log(`Detector update frequency: Every ${currentFramesToSkip + 1}th frame.`);
+            // If detector is running, restart it to apply new skip value
+            if (isDetecting) {
+                stopFaceDetectionLoop();
+                startFaceDetectionLoop();
+            }
+        });
+
+        /**
+         * Event listener for the output resolution selection dropdown.
+         * Updates the desired output resolution for the final passport photo.
+         */
+        resolutionSelect.addEventListener('change', (event) => {
+            currentOutputResolution = OUTPUT_RESOLUTIONS[event.target.value];
+            console.log(`Output resolution set to: ${currentOutputResolution.name}`);
+        });
+
+        /**
+         * Event listener for the modal close button.
+         * Hides the modal when clicked.
+         */
+        modalCloseButton.addEventListener('click', hideModal);
+
+        // --- Initial Application Setup ---
+
+        // Start the camera and model loading process when the window has fully loaded
+        window.addEventListener('load', () => initCamera(currentFacingMode));
+    </script>
+</body>
+</html>

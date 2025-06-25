@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Passport Photo Maker</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Base styles for the body - AMOLED BLACK THEME */
         body {
@@ -13,511 +12,412 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #000000; /* True AMOLED Black */
-            color: #e0e0e0;
-            padding: 5px; /* Minimal padding */
+            background-color: #000000; /* Deep black for AMOLED */
+            color: #ecf0f1; /* Light grey text */
+            padding: 20px;
             box-sizing: border-box;
             text-align: center;
-            overflow-x: hidden;
         }
 
-        /* Heading - Borg-like, sharp, functional */
+        /* Styling for the main heading */
         h1 {
-            color: #D0D0D0; /* Slightly brighter silver for prominence */
-            margin-top: 5px; /* Minimal top margin */
-            margin-bottom: 5px; /* Minimal bottom margin */
-            font-size: 1.4em; /* Slightly smaller */
-            font-weight: 700;
-            letter-spacing: 0.1em; /* Increased letter spacing for impact */
-            text-transform: uppercase;
-            text-shadow: 0 0 5px rgba(0, 191, 255, 0.3); /* Electric blue glow */
-        }
-
-        /* Loading messages - clean and subtle */
-        #loading-message {
-            margin-top: 8px;
-            margin-bottom: 12px;
-            font-size: 0.85em;
-            color: #B0B0B0; /* Slightly brighter grey */
+            color: #64b5f6; /* Lighter blue for heading on dark background */
+            margin-bottom: 25px;
+            font-size: 2.2em;
             text-align: center;
         }
 
-        /* Video container - sharp, integrated look */
+        /* Styling for loading messages */
+        #loading-message {
+            margin-top: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            color: #bdbdbd; /* Slightly lighter grey */
+            text-align: center;
+        }
+
+        /* Container for the video stream and overlay */
         #video-container {
             position: relative;
-            width: 98vw;
+            width: 90vw;
             max-width: 600px;
             aspect-ratio: 4/3;
-            background-color: #080808; /* Very dark grey, almost black */
-            border-radius: 4px; /* Minimal rounding */
+            background-color: #1a1a1a; /* Darker background for video area */
+            border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 25px; /* Increased margin for vertical space below */
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 0 8px rgba(0, 173, 239, 0.2); /* Inner shadow for depth, subtle electric blue glow */
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5); /* Stronger shadow for depth */
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 1px solid #303030; /* Fine, dark border */
         }
 
-        /* Video element */
+        /* Styling for the video element */
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
+            transform: scaleX(-1); /* Mirror the video for selfie-like view for front camera */
             display: block;
         }
 
-        /* Overlay box - sharp, functional, vibrant */
+        /* Overlay box for face detection feedback */
         #overlay-box {
             position: absolute;
-            border: 2px solid #00FFFF; /* Neon Cyan for clear feedback */
+            border: 3px solid #69f0ae; /* Brighter green for visibility on dark background */
             box-sizing: border-box;
             pointer-events: none;
             display: none;
-            border-radius: 2px; /* Very minimal rounding */
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.6); /* Matching neon glow */
+            border-radius: 6px;
         }
 
-        /* General button styling - Borg-like, angular, tactile */
+        /* General button styling */
         button {
-            font-weight: 600;
-            color: #E0E0E0; /* Light text for contrast */
+            padding: 14px 25px;
+            font-size: 1.1em;
+            background-image: linear-gradient(to right, #42a5f5, #2196f3); /* Blue gradient */
+            color: white;
             border: none;
-            border-radius: 4px; /* Minimal rounding */
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.15s ease-in-out; /* Faster, snappier transition */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.6), 0 0 8px rgba(0, 191, 255, 0.2); /* Subtle shadow + electric blue glow */
-            text-transform: uppercase; /* All caps for industrial look */
-            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+            margin: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* Darker shadow for dark theme */
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
             flex-shrink: 0;
-            background-color: #1A1A1A; /* Dark grey base */
-            border: 1px solid #00BFFF; /* Electric blue border */
         }
 
-        /* Button hover/active states - subtle, functional glow */
-        button:hover:not(:disabled) {
-            background-color: #2A2A2A; /* Slightly lighter on hover */
-            box-shadow: 0 0 12px rgba(0, 191, 255, 0.6); /* Brighter electric blue glow */
-            transform: scale(1.02); /* Slight scale for feedback */
-        }
-        button:active:not(:disabled) {
-            background-color: #0F0F0F; /* Even darker on active */
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.6); /* Inner shadow on press */
-            transform: scale(0.98);
-        }
-
-        /* Disabled buttons */
+        /* Styling for disabled buttons */
         button:disabled {
-            background-color: #080808; /* Very dark, desaturated */
-            color: #404040;
+            background-image: linear-gradient(to right, #64b5f6, #42a5f5); /* Faded blue */
             cursor: not-allowed;
             box-shadow: none;
-            border-color: #101010;
-            opacity: 0.5;
         }
 
-        /* Controls container - main layout, now uses flex for vertical stack */
+        /* Hover effect for buttons */
+        button:hover:not(:disabled) {
+            background-image: linear-gradient(to right, #2196f3, #42a5f5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        /* Container for all main control buttons and selects */
         .controls-container {
             display: flex;
-            flex-direction: column; /* Stack vertically */
-            align-items: center; /* Center items horizontally */
-            width: 98vw;
-            max-width: 450px; /* Constrain width for vertical stack */
-            padding-bottom: 20px; /* More padding at the bottom for scroll comfort */
-            gap: 15px; /* Increased gap between button/dropdown sections */
-        }
-
-        /* Capture button - still prominent, but better integrated vertically */
-        #capture-button {
-            width: calc(100% - 20px); /* Almost full width with horizontal padding */
-            max-width: 400px; /* Limit max width */
-            padding: 18px 25px; /* Much larger padding */
-            font-size: 1.2em; /* Larger font */
-            margin-bottom: 10px; /* Separator from the next stack */
-            background-color: #00BFFF; /* Deep sky blue for capture */
-            border-color: #008DCC;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.6), 0 0 8px rgba(0, 191, 255, 0.4);
-        }
-        #capture-button:hover:not(:disabled) {
-            background-color: #00A6E6;
-            box-shadow: 0 0 12px rgba(0, 191, 255, 0.8);
-        }
-        #capture-button:active:not(:disabled) {
-            background-color: #007CA1;
-        }
-
-        /* Common style for other main action buttons */
-        .controls-action-button {
-            width: calc(100% - 20px);
-            max-width: 400px;
-            padding: 15px 20px;
-            font-size: 1.1em;
-        }
-
-        /* Dropdowns container for Aspect Ratio and Resolution */
-        .select-group-container {
-            display: flex;
-            flex-direction: column; /* Stack labels vertically */
-            align-items: center;
-            width: calc(100% - 20px); /* Match other buttons' width */
-            max-width: 400px;
-            gap: 8px; /* Gap between labels and selects */
-            margin-bottom: 15px; /* Space from dev options */
-        }
-
-        .select-group-row {
-            display: flex;
-            width: 100%;
-            gap: 10px; /* Space between the two selects */
+            flex-wrap: wrap;
             justify-content: center;
-            align-items: center;
+            margin-bottom: 25px;
+            width: 95vw;
+            max-width: 700px;
         }
 
-        .select-label {
-            color: #00BFFF; /* Electric blue for labels for better pop */
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 5px; /* Space between label and dropdown */
-        }
-
-        /* Dropdowns - sleek, dark, functional, with blur */
+        /* Styling for all dropdowns (select elements) */
         select {
-            padding: 10px 15px; /* Reduced padding for shorter height */
-            font-size: 0.9em;
-            border: 1px solid #00BFFF; /* Electric blue border */
-            border-radius: 4px;
-            background-color: rgba(30, 30, 30, 0.9); /* Translucent dark grey */
-            color: #00FFFF; /* Cyan text */
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+            padding: 12px 20px;
+            font-size: 1.05em;
+            border: 2px solid #546e7a; /* Darker border */
+            border-radius: 8px;
+            margin: 8px;
+            background-color: #263238; /* Darker background */
+            color: #e0e0e0; /* Lighter text */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             cursor: pointer;
-            transition: all 0.15s ease-in-out;
+            transition: all 0.3s ease;
             appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300FFFF%22%20d%3D%22M287%2C197.6l-13.9%2C13.9L146.2%2C74.6L13.9%2C211.5L0%2C197.6L146.2%2C51.4L287%2C197.6z%22%2F%3E%3C%2Fsvg%3E'); /* Cyan arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M287%2C197.6l-13.9%2C13.9L146.2%2C74.6L13.9%2C211.5L0%2C197.6L146.2%2C51.4L287%2C197.6z%22%2F%3E%3C%2Fsvg%3E'); /* Light custom arrow */
             background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 8px auto;
-            width: 50%; /* Each takes half width of their flex container */
-            box-sizing: border-box;
-            /* backdrop-filter: blur(5px); */ /* Chic blur effect - removed for select */
-            /* -webkit-backdrop-filter: blur(5px); */ /* For Safari - removed for select */
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+            min-width: 150px;
         }
 
         select:focus {
-            border-color: #00FFFF; /* Cyan accent on focus */
+            border-color: #64b5f6;
             outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.3);
         }
 
-        /* Developer options section - NOW INLINE */
-        /* Removed #developer-options-section styling */
-
-        h3 {
-            color: #C0C0C0; /* Muted silver for heading */
-            font-size: 1.1em;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 20px; /* Space from elements above */
-        }
-
-        /* Slider group - sharp, dark, functional, now directly in main flow */
+        /* Styles for slider group (combining label, number input, range slider, and note) */
         .slider-group {
-            background-color: rgba(20, 20, 20, 0.8); /* Slightly darker translucent */
-            border: 1px solid #00BFFF; /* Electric blue border */
-            margin-bottom: 10px; /* Gap between sliders */
-            padding: 10px;
-            width: calc(100% - 10px); /* Adjust to fit within controls-container padding */
-            max-width: 400px; /* Increased max-width */
-            box-shadow: 0 0 8px rgba(0, 191, 255, 0.1); /* Subtle glow for groups */
-            border-radius: 4px; /* Slight rounding for groups */
-            /* backdrop-filter: blur(3px); */ /* Slightly less blur than section - removed */
-            /* -webkit-backdrop-filter: blur(3px); */ /* For Safari - removed */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 8px;
+            color: #bdbdbd;
+            font-size: 1em;
+            min-width: 150px;
+            background-color: #263238; /* Match select background */
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .slider-group:last-child {
-            margin-bottom: 0;
-        }
-
         .slider-group label {
-            font-weight: 600;
-            color: #00BFFF; /* Electric blue accent for labels */
+            font-weight: bold;
+            color: #e0e0e0;
             margin-bottom: 5px;
             display: flex;
             align-items: center;
-            gap: 5px;
-            font-size: 0.9em;
-            justify-content: space-between; /* Space out label and number input */
+            gap: 5px; /* Space between label text and number input */
         }
         .slider-group .slider-note {
-            font-size: 0.65em;
-            color: #909090; /* Softer grey for notes */
-            margin-top: 3px;
-            text-align: center;
-        }
-
-        /* Number input next to slider */
-        input[type="number"] {
-            width: 70px; /* Slightly wider */
-            padding: 5px 8px; /* Slightly less padding */
-            border: 1px solid #008DCC; /* Darker electric blue border */
-            border-radius: 3px;
-            background-color: rgba(5, 5, 5, 0.9); /* More opaque, very dark for direct input */
-            color: #E0E0E0;
             font-size: 0.8em;
+            color: #9e9e9e; /* Slightly darker note */
+            margin-top: 5px;
             text-align: center;
-            -moz-appearance: textfield;
-            appearance: textfield;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.3);
-        }
-        input[type="number"]:focus {
-            border-color: #00FFFF; /* Cyan accent on focus */
-            outline: none;
-            box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.3);
         }
 
-        /* Range slider */
+        /* Styling for number input next to slider */
+        input[type="number"] {
+            width: 70px; /* Fixed width */
+            padding: 8px 10px;
+            border: 1px solid #546e7a;
+            border-radius: 4px;
+            background-color: #37474f; /* Slightly lighter dark for input */
+            color: #e0e0e0;
+            font-size: 0.9em;
+            text-align: center;
+            -moz-appearance: textfield; /* Hide spin buttons in Firefox */
+            appearance: textfield; /* Hide spin buttons in Chrome/Safari */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        /* Hide spin buttons in Chrome/Safari/Edge */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"]:focus {
+            border-color: #64b5f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.3);
+        }
+        input[type="number"]:disabled {
+            background-color: #455a64;
+            color: #9e9e9e;
+        }
+
+        /* Styling for the range slider */
         input[type="range"] {
             -webkit-appearance: none;
-            width: 95%;
-            height: 6px;
-            background: #008DCC; /* Deep Sky Blue for track */
+            width: 100%;
+            max-width: 200px;
+            height: 8px;
+            background: #455a64; /* Darker track background */
             outline: none;
-            opacity: 0.9;
-            transition: opacity .15s;
-            border-radius: 3px;
-            margin: 4px 0;
+            opacity: 0.8;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+            border-radius: 4px;
+            margin: 8px 0;
         }
+
         input[type="range"]:hover {
             opacity: 1;
         }
+
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #00FFFF; /* Neon Cyan thumb */
+            background: #64b5f6; /* Brighter blue thumb */
             cursor: pointer;
-            box-shadow: 0 0 6px rgba(0,255,255,0.5); /* Stronger neon glow */
-            margin-top: -7px;
-            border: 1px solid #00BFFF; /* Electric blue border */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            margin-top: -6px;
         }
+
         input[type="range"]::-moz-range-thumb {
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #00FFFF; /* Neon Cyan thumb */
+            background: #64b5f6;
             cursor: pointer;
-            box-shadow: 0 0 6px rgba(0,255,255,0.5);
-            border: 1px solid #00BFFF;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        /* --- Modal Styling --- */
+        /* --- Modal Styling (re-used for both photo and dev settings modals) --- */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.95);
+            background-color: rgba(0, 0, 0, 0.8); /* Even darker dim background */
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             visibility: hidden;
             opacity: 0;
-            transition: visibility 0.25s, opacity 0.25s ease-out;
+            transition: visibility 0.3s, opacity 0.3s;
         }
+
         .modal-overlay.visible {
             visibility: visible;
             opacity: 1;
         }
 
         .modal-content {
-            background-color: #0A0A0A;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9);
+            background-color: #212121; /* Dark modal background */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); /* Deeper shadow */
             text-align: center;
-            max-width: 95vw;
-            max-height: 95vh;
+            max-width: 90vw;
+            max-height: 90vh;
             overflow-y: auto;
             position: relative;
-            transform: translateY(10px);
-            transition: transform 0.25s ease-out;
-            color: #e0e0e0;
-            border: 1px solid #00BFFF; /* Electric Blue border */
+            transform: translateY(20px);
+            transition: transform 0.3s ease-out;
+            color: #e0e0e0; /* Light text for modal */
+        }
+
+        .modal-overlay.visible .modal-content {
+            transform: translateY(0);
         }
 
         .modal-content h2 {
-            color: #00FFFF; /* Cyan for prominence */
-            margin-bottom: 15px;
-            font-size: 1.5em;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
+            color: #64b5f6; /* Lighter blue for modal heading */
+            margin-bottom: 20px;
+            font-size: 1.8em;
         }
 
         #modal-passport-photo {
             max-width: 100%;
             height: auto;
-            border: 1px solid #202020;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-            margin-bottom: 15px;
+            border: 2px solid #424242; /* Darker border for image */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
             display: block;
             margin-left: auto;
             margin-right: auto;
         }
 
         .modal-details {
-            margin-bottom: 15px;
-            color: #00BFFF; /* Electric Blue for details */
-            font-size: 0.9em;
-            line-height: 1.4;
+            margin-bottom: 25px;
+            color: #bdbdbd; /* Lighter grey for details */
+            font-size: 1em;
+            line-height: 1.5;
         }
 
         .modal-details p {
-            margin: 3px 0;
+            margin: 5px 0;
         }
 
-        /* Modal controls and button groups - consistent grid for compactness */
-        .modal-controls, .modal-button-group {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-top: 15px;
+        .modal-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
             margin-bottom: 10px;
-        }
-        @media (min-width: 480px) {
-            .modal-controls, .modal-button-group {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (min-width: 768px) {
-            .modal-controls, .modal-button-group {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            }
-        }
-        /* Specific sizing for modal buttons/selects */
-        .modal-controls select, .modal-controls .slider-group,
-        .modal-button-group button {
-            width: 100%;
-            padding: 12px 18px;
-            font-size: 0.95em;
-            margin: 0;
+            gap: 10px; /* Spacing between modal controls */
         }
 
+        .modal-controls select {
+            margin: 0; /* Remove individual margins as gap handles it */
+            min-width: unset;
+            width: calc(50% - 5px); /* Two items per row, with gap */
+            max-width: 250px;
+        }
 
-        /* Modal specific button colors */
+        /* Specific button styles for modal actions */
         .modal-close-button {
-            background-color: #4A4A4A;
-            border-color: #00BFFF; /* Electric Blue border */
+            background-image: linear-gradient(to right, #e57373, #d32f2f); /* Red gradient */
         }
         .modal-close-button:hover:not(:disabled) {
-            background-color: #606060;
-            box-shadow: 0 0 8px rgba(0, 191, 255, 0.3); /* Electric Blue glow */
+            background-image: linear-gradient(to right, #d32f2f, #e57373);
         }
         .reprocess-button {
-            background-color: #008000;
-            border-color: #00BFFF; /* Electric Blue border */
+            background-image: linear-gradient(to right, #81c784, #4caf50); /* Green gradient */
         }
         .reprocess-button:hover:not(:disabled) {
-            background-color: #006400;
-            box-shadow: 0 0 8px rgba(0, 128, 0, 0.6); /* Green glow */
+            background-image: linear-gradient(to right, #4caf50, #81c784);
         }
-        .download-button {
-            background-color: #FF8C00;
-            border-color: #00BFFF; /* Electric Blue border */
+        .download-button { /* New download button style */
+            background-image: linear-gradient(to right, #ffb300, #ffa000); /* Amber gradient */
         }
         .download-button:hover:not(:disabled) {
-            background-color: #E67E00;
-            box-shadow: 0 0 8px rgba(255, 140, 0, 0.6); /* Orange glow */
+            background-image: linear-gradient(to right, #ffa000, #ffb300);
         }
 
-        /* Hidden canvas */
+        .modal-button-group { /* Group for buttons at the bottom of modals */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        .modal-button-group button {
+            width: calc(50% - 15px); /* Adjusted for 2 buttons + gap */
+            max-width: 200px;
+            margin: 0; /* Remove individual margins */
+        }
+        /* If there's an odd number of buttons */
+        .modal-button-group button:last-child:nth-last-child(1) {
+            width: auto; /* Allow single button to take natural width */
+            min-width: 150px;
+        }
+
+
+        /* Hidden canvas for image processing */
         canvas {
             display: none;
         }
 
-        /* Custom message box styling */
-        #custom-message-box-overlay {
-            z-index: 2000;
-        }
-        #custom-message-box-overlay .modal-content {
-            background-color: #0A0A0A;
-            border: 1px solid #00BFFF; /* Electric Blue border */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9);
-            padding: 20px;
-        }
-        #custom-message-box-overlay h3 {
-            color: #00FFFF; /* Cyan for prominence */
-            font-size: 1.1em;
-            margin-bottom: 10px;
-        }
-        #custom-message-box-overlay p {
-            color: #E0E0E0;
-            font-size: 0.85em;
-            margin-bottom: 15px;
-        }
-        #custom-message-box-overlay button {
-            background-color: #4A4A4A;
-            border-color: #00BFFF; /* Electric Blue border */
-        }
-        #custom-message-box-overlay button:hover:not(:disabled) {
-             background-color: #606060;
-             box-shadow: 0 0 8px rgba(0, 173, 239, 0.3);
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            #video-container {
+                width: 70vw;
+            }
+            button {
+                font-size: 1.2em;
+                padding: 14px 30px;
+            }
+            select {
+                font-size: 1.1em;
+            }
+            .modal-controls select {
+                width: auto;
+            }
+            .modal-button-group button {
+                width: auto;
+            }
         }
     </style>
     <script src="face-api.js/dist/face-api.min.js"></script>
 </head>
-<body class="bg-black text-gray-200 flex flex-col items-center justify-start min-h-screen px-1 pb-4 pt-1 sm:p-5">
-    <h1 class="text-neutral-300 mt-1 mb-1 text-xl sm:text-2xl font-bold uppercase tracking-widest text-shadow-md">Passport Photo Maker</h1>
-    <div id="loading-message" class="text-gray-400 text-sm sm:text-base mb-3">Loading camera and models...</div>
+<body>
+    <h1>Passport Photo Maker</h1>
+    <div id="loading-message">Loading camera and models...</div>
 
-    <div id="video-container" class="relative w-[98vw] sm:w-[70vw] max-w-xl aspect-video bg-neutral-950 rounded-sm overflow-hidden mb-8 shadow-xl flex justify-center items-center border border-neutral-700">
-        <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
-        <div id="overlay-box" class="absolute border-2 border-lime-400 box-border pointer-events-none hidden rounded-sm"></div>
+    <div id="video-container">
+        <video id="camera-stream" autoplay playsinline></video>
+        <div id="overlay-box"></div>
     </div>
 
-    <div class="controls-container w-[98vw] max-w-2xl">
-        <button id="capture-button" disabled class="primary-button">Capture Photo</button>
-        <button id="switch-camera-button" disabled class="controls-action-button">Switch Camera</button>
-        <button id="toggle-detection-button" disabled class="controls-action-button">Pause Detector</button>
+    <div class="controls-container">
+        <button id="capture-button" disabled>Capture Photo</button>
+        <button id="switch-camera-button" disabled>Switch Camera</button>
+        <button id="toggle-detection-button" disabled>Pause Detector</button>
 
-        <div class="select-group-container">
-            <div class="select-group-row">
-                <label for="resolution-select" class="select-label">Resolution:</label>
-                <select id="resolution-select" disabled></select>
-                 <label for="country-select" class="select-label">Aspect Ratio:</label>
-                <select id="country-select" disabled></select>
-            </div>
-        </div>
+        <select id="country-select" disabled>
+            </select>
 
-        <h3>Developer Settings</h3>
-        <div class="slider-group">
-            <label for="input-size-slider">Input Size: <input type="number" id="input-size-number" min="128" max="608" step="32" value="224" disabled></label>
-            <input type="range" id="input-size-slider" min="128" max="608" step="32" value="224" disabled>
-            <p class="slider-note">*Multiple of 32.</p>
-        </div>
+        <select id="resolution-select" disabled>
+            </select>
 
-        <div class="slider-group">
-            <label for="score-threshold-slider">Score Threshold: <input type="number" id="score-threshold-number" min="0.05" max="0.95" step="0.05" value="0.5" disabled></label>
-            <input type="range" id="score-threshold-slider" min="0.05" max="0.95" step="0.05" value="0.5" disabled>
-            <p class="slider-note">Min confidence for detection.</p>
-        </div>
-
-        <div class="slider-group">
-            <label for="skip-frames-slider">Detector Every Nth Frame: <input type="number" id="skip-frames-number" min="0" max="10" step="1" value="2" disabled></label>
-            <input type="range" id="skip-frames-slider" min="0" max="10" step="1" value="2" disabled>
-            <p class="slider-note">*0 = Every Frame.</p>
-        </div>
+        <button id="dev-settings-button" disabled>Developer Settings</button>
     </div>
 
-    <canvas id="hidden-canvas" class="hidden"></canvas>
+    <canvas id="hidden-canvas"></canvas>
 
     <div id="photo-modal" class="modal-overlay">
         <div class="modal-content">
@@ -529,8 +429,10 @@
             </div>
 
             <div class="modal-controls">
-                <select id="country-select-modal"></select>
-                <select id="resolution-select-modal"></select>
+                <select id="country-select-modal">
+                    </select>
+                <select id="resolution-select-modal">
+                    </select>
             </div>
             <div class="modal-button-group">
                 <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
@@ -540,11 +442,36 @@
         </div>
     </div>
 
-    <div id="custom-message-box-overlay" class="modal-overlay">
+    <div id="dev-settings-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3>Information</h3>
-            <p></p>
-            <button class="modal-close-button">OK</button>
+            <h2>Developer Settings</h2>
+            <div class="modal-details" style="margin-bottom: 20px;">
+                <p>Adjust AI detection parameters for testing and fine-tuning.</p>
+            </div>
+
+            <div class="modal-controls">
+                <div class="slider-group">
+                    <label for="input-size-slider">Input Size: <input type="number" id="input-size-number" min="128" step="32" value="224" disabled></label>
+                    <input type="range" id="input-size-slider" min="128" max="608" step="32" value="224" disabled>
+                    <p class="slider-note">*Input Size must be a multiple of 32 for optimal performance.</p>
+                </div>
+
+                <div class="slider-group">
+                    <label for="score-threshold-slider">Score Threshold: <input type="number" id="score-threshold-number" min="0.05" max="0.95" step="0.05" value="0.5" disabled></label>
+                    <input type="range" id="score-threshold-slider" min="0.05" max="0.95" step="0.05" value="0.5" disabled>
+                </div>
+
+                <select id="skip-frames-select" disabled style="width: auto;">
+                    <option value="0">Detector: Every Frame</option>
+                    <option value="1">Detector: Every 2nd Frame</option>
+                    <option value="2" selected>Detector: Every 3rd Frame</option>
+                    <option value="4">Detector: Every 5th Frame</option>
+                </select>
+            </div>
+
+            <div class="modal-button-group">
+                <button id="dev-settings-close-button" class="modal-close-button">Close</button>
+            </div>
         </div>
     </div>
 
@@ -565,7 +492,7 @@
         // Main controls (outside modals)
         const countrySelect = document.getElementById('country-select');
         const resolutionSelect = document.getElementById('resolution-select');
-        // const devSettingsButton = document.getElementById('dev-settings-button'); // REMOVED
+        const devSettingsButton = document.getElementById('dev-settings-button'); // New
 
         // Photo Modal elements
         const photoModal = document.getElementById('photo-modal');
@@ -577,35 +504,26 @@
         const countrySelectModal = document.getElementById('country-select-modal');
         const resolutionSelectModal = document.getElementById('resolution-select-modal');
         const reprocessButton = document.getElementById('reprocess-button');
-        const downloadButton = document.getElementById('download-button');
+        const downloadButton = document.getElementById('download-button'); // New
 
-        // Developer Settings Modal elements (These now become direct references to elements in the main DOM)
-        // const devSettingsModal = document.getElementById('dev-settings-modal'); // REMOVED
-        // const devSettingsCloseButton = document.getElementById('dev-settings-close-button'); // REMOVED
-
-        // Input Size controls
+        // Developer Settings Modal elements (new)
+        const devSettingsModal = document.getElementById('dev-settings-modal');
+        const devSettingsCloseButton = document.getElementById('dev-settings-close-button');
+        const skipFramesSelect = document.getElementById('skip-frames-select');
         const inputSizeSlider = document.getElementById('input-size-slider');
         const inputSizeNumber = document.getElementById('input-size-number');
-        // Score Threshold controls
         const scoreThresholdSlider = document.getElementById('score-threshold-slider');
         const scoreThresholdNumber = document.getElementById('score-threshold-number');
-        // Skip Frames controls (now with slider and number input)
-        const skipFramesSlider = document.getElementById('skip-frames-slider');
-        const skipFramesNumber = document.getElementById('skip-frames-number');
-
-        // Custom Message Box elements
-        const customMessageBoxOverlay = document.getElementById('custom-message-box-overlay');
-        const customMessageBoxContent = customMessageBoxOverlay.querySelector('.modal-content p');
-        const customMessageBoxButton = customMessageBoxOverlay.querySelector('button');
 
 
         // --- Configuration Variables ---
 
         // Passport photo specifications for different countries/types
+        // Added 'value' property for easier mapping with dropdown options
         const PASSPORT_SPECS = {
             'standard': { // Common for 35x45mm dimensions
                 value: 'standard',
-                name: 'Std (35x45mm)', // Shorter label
+                name: 'Standard (35x45mm)',
                 aspectRatio: 35 / 45, // width / height
                 faceScaleHeight: 0.75, // 70-80% of photo height for face
                 faceOffsetTopRatio: 0.1 // 10-12% from top for head start
@@ -618,25 +536,27 @@
                 faceOffsetTopRatio: 0.08 // Head should be 1/8 to 1/2 inch from top
             },
             // Add more country options here as needed, following the same structure
+            // 'turkey': { value: 'turkey', name: 'Turkey (5x6 cm)', aspectRatio: 5/6, faceScaleHeight: 0.7, faceOffsetTopRatio: 0.1 }
         };
 
         // Output resolution presets for the final passport photo
+        // Added 'value' property for easier mapping with dropdown options
         const OUTPUT_RESOLUTIONS = {
             'standard-res': {
                 value: 'standard-res',
-                name: 'Std Res', // Shorter label
+                name: 'Standard Res (350/450px)',
                 baseWidth: 350,
                 baseHeight: 450
             },
             'high-res': {
                 value: 'high-res',
-                name: 'High Res', // Shorter label
+                name: 'High Res (700/900px)',
                 baseWidth: 700,
                 baseHeight: 900
             },
             'super-high-res': {
                 value: 'super-high-res',
-                name: 'Super Res', // Shorter label
+                name: 'Super High Res (1050/1350px)',
                 baseWidth: 1050,
                 baseHeight: 1350
             }
@@ -645,9 +565,9 @@
         // Initialize current selected specs and resolution based on default HTML options
         let currentSpecs = PASSPORT_SPECS[countrySelect.value || 'standard'];
         let currentOutputResolution = OUTPUT_RESOLUTIONS[resolutionSelect.value || 'standard-res'];
-        let currentFramesToSkip = parseInt(skipFramesNumber.value); // Use number input value as initial
-        let currentInputSize = parseInt(inputSizeNumber.value); // Use number input value as initial
-        let currentScoreThreshold = parseFloat(scoreThresholdNumber.value); // Use number input value as initial
+        let currentFramesToSkip = parseInt(skipFramesSelect.value); // Now in dev modal
+        let currentInputSize = parseInt(inputSizeNumber.value); // Now a number input
+        let currentScoreThreshold = parseFloat(scoreThresholdNumber.value); // Now a number input
 
         let currentFacingMode = 'user';
         let animationFrameId = null;
@@ -657,6 +577,7 @@
         const MODELS_URL = 'face-api.js/weights';
 
         // face-api.js TinyFaceDetector options (now a function to allow dynamic updates)
+        // This function will be called whenever the options are needed to ensure the latest values are used.
         const getTinyFaceDetectorOptions = () => new faceapi.TinyFaceDetectorOptions({
             inputSize: currentInputSize, // Dynamic input size
             scoreThreshold: currentScoreThreshold // Dynamic score threshold
@@ -686,7 +607,7 @@
         }
 
         /**
-         * Displays a modal by adding the 'visible' class.
+         * Displays a modal.
          * @param {HTMLElement} modalElement - The modal element to display.
          */
         function showModal(modalElement) {
@@ -694,7 +615,7 @@
         }
 
         /**
-         * Hides a modal by removing the 'visible' class.
+         * Hides a modal.
          * @param {HTMLElement} modalElement - The modal element to hide.
          */
         function hideModal(modalElement) {
@@ -722,15 +643,7 @@
             toggleDetectionButton.disabled = true;
             countrySelect.disabled = true;
             resolutionSelect.disabled = true;
-            // devSettingsButton.disabled = true; // REMOVED
-
-            // Also disable the inline dev settings sliders
-            inputSizeSlider.disabled = true;
-            inputSizeNumber.disabled = true;
-            scoreThresholdSlider.disabled = true;
-            scoreThresholdNumber.disabled = true;
-            skipFramesSlider.disabled = true;
-            skipFramesNumber.disabled = true;
+            devSettingsButton.disabled = true; // Disable dev settings button during camera loading
 
             loadingMessage.style.display = 'block';
             loadingMessage.textContent = `Accessing ${facingMode === 'user' ? 'front' : 'rear'} camera...`;
@@ -753,7 +666,7 @@
             } catch (err) {
                 console.error("Error accessing camera: ", err);
                 loadingMessage.textContent = "Error: Camera access denied or not available. Please ensure HTTPS and granted permissions.";
-                // Show a user-friendly message in the photo modal
+                // Display a user-friendly message, potentially in the modal or on screen
                 modalTitle.textContent = "Camera Access Denied!";
                 modalPassportPhoto.style.display = 'none';
                 modalCountrySpec.textContent = "Please allow camera access and ensure you are on HTTPS.";
@@ -766,15 +679,7 @@
                 toggleDetectionButton.disabled = true;
                 countrySelect.disabled = true;
                 resolutionSelect.disabled = true;
-                // devSettingsButton.disabled = true; // REMOVED
-
-                // Keep inline dev settings sliders disabled
-                inputSizeSlider.disabled = true;
-                inputSizeNumber.disabled = true;
-                scoreThresholdSlider.disabled = true;
-                scoreThresholdNumber.disabled = true;
-                skipFramesSlider.disabled = true;
-                skipFramesNumber.disabled = true;
+                devSettingsButton.disabled = true; // Keep disabled on error
             }
         }
 
@@ -799,29 +704,27 @@
                 captureButton.disabled = false; // Enable the capture button
                 switchCameraButton.disabled = false; // Enable switch camera button
                 toggleDetectionButton.disabled = false; // Enable toggle detection button
-                
-                // Populate and enable dropdowns
-                populateSelect(countrySelect, PASSPORT_SPECS, 'standard');
-                populateSelect(resolutionSelect, OUTPUT_RESOLUTIONS, 'standard-res');
-                countrySelect.disabled = false; 
-                resolutionSelect.disabled = false; 
+                countrySelect.disabled = false; // Enable country select dropdown
+                resolutionSelect.disabled = false; // Enable resolution dropdown
+                devSettingsButton.disabled = false; // Enable developer settings button
 
-                // devSettingsButton.disabled = false; // REMOVED
+                // Initialize main dropdowns with correct options and selected values
+                populateSelect(countrySelect, PASSPORT_SPECS, currentSpecs.value);
+                populateSelect(resolutionSelect, OUTPUT_RESOLUTIONS, currentOutputResolution.value);
 
-                // Enable inline dev settings controls (sliders and numbers)
+                // Initialize dev settings controls (sliders and numbers)
                 inputSizeSlider.disabled = false;
                 inputSizeNumber.disabled = false;
                 scoreThresholdSlider.disabled = false;
                 scoreThresholdNumber.disabled = false;
-                skipFramesSlider.disabled = false;
-                skipFramesNumber.disabled = false;
+                skipFramesSelect.disabled = false;
 
 
                 startFaceDetectionLoop(); // Start continuous face detection for the overlay
             } catch (error) {
                 console.error("Error loading face-api.js models:", error);
                 loadingMessage.textContent = "Error loading AI models. Check console and 'face-api.js/weights' folder setup.";
-                // Show a user-friendly message in the photo modal
+                // Display a user-friendly message in the modal
                 modalTitle.textContent = "AI Model Loading Failed!";
                 modalPassportPhoto.style.display = 'none';
                 modalCountrySpec.textContent = "Ensure 'face-api.js/weights' folder exists with correct files.";
@@ -834,15 +737,7 @@
                 toggleDetectionButton.disabled = true;
                 countrySelect.disabled = true;
                 resolutionSelect.disabled = true;
-                // devSettingsButton.disabled = true; // REMOVED
-
-                // Keep inline dev settings sliders disabled
-                inputSizeSlider.disabled = true;
-                inputSizeNumber.disabled = true;
-                scoreThresholdSlider.disabled = true;
-                scoreThresholdNumber.disabled = true;
-                skipFramesSlider.disabled = true;
-                skipFramesNumber.disabled = true;
+                devSettingsButton.disabled = true; // Keep disabled on error
             }
         }
 
@@ -1087,8 +982,20 @@
             console.log(`Output resolution set to: ${currentOutputResolution.name}`);
         });
 
-        // REMOVED: Event listener for devSettingsButton as it's now inline.
-        // devSettingsButton.addEventListener('click', () => { ... });
+        /**
+         * Event listener for the "Developer Settings" button.
+         * Opens the developer settings modal.
+         */
+        devSettingsButton.addEventListener('click', () => {
+            // Ensure dev controls reflect current values when modal opens
+            inputSizeSlider.value = currentInputSize;
+            inputSizeNumber.value = currentInputSize;
+            scoreThresholdSlider.value = currentScoreThreshold;
+            scoreThresholdNumber.value = currentScoreThreshold;
+            skipFramesSelect.value = currentFramesToSkip;
+
+            showModal(devSettingsModal);
+        });
 
         // --- Event Listeners (Photo Modal Controls) ---
 
@@ -1148,25 +1055,25 @@
                 a.click();
                 document.body.removeChild(a);
             } else {
-                 // Use a custom message box instead of alert()
-                showCustomMessageBox("No photo to download! Please capture or re-process a photo first.");
+                alert('No photo to download!');
             }
         });
 
-        // --- Event Listeners (Inline Developer Settings Controls) ---
-
-        // REMOVED: devSettingsCloseButton listener as modal is gone.
-        // devSettingsCloseButton.addEventListener('click', () => hideModal(devSettingsModal));
+        // --- Event Listeners (Developer Settings Modal Controls) ---
 
         /**
-         * Event listeners for Input Size slider and number input (syncing and updating detector).
+         * Event listener for the developer settings modal close button.
+         * Hides the modal.
+         */
+        devSettingsCloseButton.addEventListener('click', () => hideModal(devSettingsModal));
+
+        /**
+         * Event listeners for input size slider and number input (syncing and updating detector).
          */
         inputSizeSlider.addEventListener('input', (event) => {
-            const val = parseInt(event.target.value);
-            currentInputSize = val;
-            inputSizeNumber.value = val;
+            currentInputSize = parseInt(event.target.value);
+            inputSizeNumber.value = currentInputSize;
             console.log(`Input Size set to: ${currentInputSize}`);
-            // Restart detection loop to apply new input size
             if (isDetecting) {
                 stopFaceDetectionLoop();
                 startFaceDetectionLoop();
@@ -1175,15 +1082,12 @@
         inputSizeNumber.addEventListener('change', (event) => {
             let val = parseInt(event.target.value);
             // Ensure it's a multiple of 32 and within allowed range
-            const min = parseInt(inputSizeNumber.min);
-            const max = parseInt(inputSizeNumber.max);
-            val = Math.max(min, Math.min(max, val));
+            val = Math.max(parseInt(inputSizeNumber.min), Math.min(parseInt(inputSizeNumber.max), val));
             val = Math.round(val / 32) * 32; // Snap to nearest multiple of 32
             event.target.value = val; // Update input field to corrected value
             currentInputSize = val;
             inputSizeSlider.value = val; // Sync slider
             console.log(`Input Size (manual) set to: ${currentInputSize}`);
-            // Restart detection loop to apply new input size
             if (isDetecting) {
                 stopFaceDetectionLoop();
                 startFaceDetectionLoop();
@@ -1191,14 +1095,12 @@
         });
 
         /**
-         * Event listeners for Score Threshold slider and number input (syncing and updating detector).
+         * Event listeners for score threshold slider and number input (syncing and updating detector).
          */
         scoreThresholdSlider.addEventListener('input', (event) => {
-            const val = parseFloat(event.target.value);
-            currentScoreThreshold = val;
-            scoreThresholdNumber.value = val.toFixed(2); // Display with 2 decimal places
+            currentScoreThreshold = parseFloat(event.target.value);
+            scoreThresholdNumber.value = currentScoreThreshold.toFixed(2); // Display with 2 decimal places
             console.log(`Score Threshold set to: ${currentScoreThreshold}`);
-            // Restart detection loop to apply new score threshold
             if (isDetecting) {
                 stopFaceDetectionLoop();
                 startFaceDetectionLoop();
@@ -1207,16 +1109,12 @@
         scoreThresholdNumber.addEventListener('change', (event) => {
             let val = parseFloat(event.target.value);
             // Ensure it's within allowed range and snaps to step
-            const min = parseFloat(scoreThresholdNumber.min);
-            const max = parseFloat(scoreThresholdNumber.max);
-            const step = parseFloat(scoreThresholdNumber.step);
-            val = Math.max(min, Math.min(max, val));
-            val = Math.round(val * (1 / step)) / (1 / step); // Snap to nearest step
+            val = Math.max(parseFloat(scoreThresholdNumber.min), Math.min(parseFloat(scoreThresholdNumber.max), val));
+            val = Math.round(val * (1 / parseFloat(scoreThresholdNumber.step))) / (1 / parseFloat(scoreThresholdNumber.step));
             event.target.value = val.toFixed(2); // Update input field to corrected value
             currentScoreThreshold = val;
             scoreThresholdSlider.value = val; // Sync slider
             console.log(`Score Threshold (manual) set to: ${currentScoreThreshold}`);
-            // Restart detection loop to apply new score threshold
             if (isDetecting) {
                 stopFaceDetectionLoop();
                 startFaceDetectionLoop();
@@ -1224,46 +1122,17 @@
         });
 
         /**
-         * Event listeners for Skip Frames slider and number input (syncing and updating detector).
+         * Event listener for the skip frames selection dropdown (now in dev modal).
+         * Updates the number of frames to skip for live face detection.
          */
-        skipFramesSlider.addEventListener('input', (event) => {
-            const val = parseInt(event.target.value);
-            currentFramesToSkip = val;
-            skipFramesNumber.value = val;
+        skipFramesSelect.addEventListener('change', (event) => {
+            currentFramesToSkip = parseInt(event.target.value);
             console.log(`Detector update frequency: Every ${currentFramesToSkip + 1}th frame.`);
-            // Restart detection loop to apply new skip value
+            // If detector is running, restart it to apply new skip value
             if (isDetecting) {
                 stopFaceDetectionLoop();
                 startFaceDetectionLoop();
             }
-        });
-        skipFramesNumber.addEventListener('change', (event) => {
-            let val = parseInt(event.target.value);
-            const min = parseInt(skipFramesNumber.min);
-            const max = parseInt(skipFramesNumber.max);
-            val = Math.max(min, Math.min(max, val));
-            event.target.value = val; // Update input field to corrected value
-            currentFramesToSkip = val;
-            skipFramesSlider.value = val; // Sync slider
-            console.log(`Detector update frequency (manual): Every ${currentFramesToSkip + 1}th frame.`);
-            // Restart detection loop to apply new skip value
-            if (isDetecting) {
-                stopFaceDetectionLoop();
-                startFaceDetectionLoop();
-            }
-        });
-
-        /**
-         * Custom Message Box Function (replaces alert())
-         */
-        function showCustomMessageBox(message) {
-            customMessageBoxContent.textContent = message;
-            showModal(customMessageBoxOverlay);
-        }
-
-        // Event listener for the custom message box's OK button
-        customMessageBoxButton.addEventListener('click', () => {
-            hideModal(customMessageBoxOverlay);
         });
 
 
