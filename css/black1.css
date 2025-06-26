@@ -347,13 +347,14 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .modal-content h2 {
-    color: #00FFFF; /* Cyan for prominence */
+    color: #D0D0D0; /* Changed to match main heading for consistency */
     margin-top: 10px; /* Smaller top margin */
     margin-bottom: 10px; /* Smaller bottom margin */
     font-size: 1.2em; /* Smaller font size */
     font-weight: bold; /* Keep bold */
-    text-transform: none; /* No uppercase for more minimal look */
-    letter-spacing: 0.02em; /* Smaller letter spacing */
+    text-transform: uppercase; /* Changed to uppercase for consistency */
+    letter-spacing: 0.08em; /* Adjusted letter spacing */
+    text-shadow: 0 0 5px rgba(0, 191, 255, 0.3); /* Added electric blue glow */
 }
 
 #modal-passport-photo {
@@ -370,7 +371,7 @@ input[type="range"]::-moz-range-thumb {
 
 .modal-details {
     margin-bottom: 15px;
-    color: #00BFFF; /* Electric Blue for details */
+    color: #B0B0B0; /* Changed to a softer grey for details */
     font-size: 0.9em;
     line-height: 1.4;
 }
@@ -412,9 +413,9 @@ input[type="range"]::-moz-range-thumb {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: #202020; /* Dark background for the box */
-    border: 1px solid #FF0000; /* Red border */
-    color: #FF0000; /* Red color for the X */
+    background: #1A1A1A; /* Dark background for the box, consistent with other buttons */
+    border: 1px solid #00BFFF; /* Electric blue border, consistent with other buttons */
+    color: #00FFFF; /* Cyan color for the X, consistent with theme */
     width: 35px; /* Square box */
     height: 35px; /* Square box */
     display: flex;
@@ -426,38 +427,88 @@ input[type="range"]::-moz-range-thumb {
     padding: 0; /* Remove padding for better control of size */
     line-height: 1; /* Center X vertically */
     transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.15s ease-in-out;
-    box-shadow: 0 0 5px rgba(255, 0, 0, 0.4); /* Subtle red glow */
+    box-shadow: 0 0 5px rgba(0, 191, 255, 0.4); /* Subtle electric blue glow */
     border-radius: 4px; /* Slight rounding for the box */
 }
 .modal-close-button-x:hover {
-    background-color: #300000; /* Darker red background on hover */
-    border-color: #FF4444; /* Lighter red on hover */
-    color: #FF4444; /* Lighter red on hover */
+    background-color: #2A2A2A; /* Slightly lighter on hover */
+    border-color: #00FFFF; /* Brighter cyan on hover */
+    color: #00FFFF; /* Brighter cyan on hover */
     transform: scale(1.05); /* Slight scale on hover */
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
+    box-shadow: 0 0 8px rgba(0, 191, 255, 0.6);
 }
 .modal-close-button-x:active {
-    background-color: #100000; /* Even darker red on active */
-    border-color: #CC0000; /* Darker red on active */
-    color: #CC0000; /* Darker red on active */
+    background-color: #0F0F0F; /* Even darker on active */
+    border-color: #008DCC; /* Darker electric blue on active */
+    color: #00BFFF; /* Darker electric blue on active */
     transform: scale(0.95);
 }
 
 .reprocess-button {
-    background-color: #008000;
+    background-color: #1A1A1A; /* Dark grey base, consistent with other buttons */
     border-color: #00BFFF; /* Electric Blue border */
+    color: #E0E0E0; /* Light text for contrast */
 }
 .reprocess-button:hover:not(:disabled) {
-    background-color: #006400;
-    box-shadow: 0 0 8px rgba(0, 128, 0, 0.6); /* Green glow */
+    background-color: #2A2A2A;
+    box-shadow: 0 0 12px rgba(0, 191, 255, 0.6); /* Electric blue glow */
 }
+.reprocess-button:active:not(:disabled) {
+    background-color: #0F0F0F;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.6);
+}
+
 .download-button {
-    background-color: #FF8C00;
+    background-color: #1A1A1A; /* Dark grey base, consistent with other buttons */
     border-color: #00BFFF; /* Electric Blue border */
+    color: #E0E0E0; /* Light text for contrast */
 }
 .download-button:hover:not(:disabled) {
-    background-color: #E67E00;
-    box-shadow: 0 0 8px rgba(255, 140, 0, 0.6); /* Orange glow */
+    background-color: #2A2A2A;
+    box-shadow: 0 0 12px rgba(0, 191, 255, 0.6); /* Electric blue glow */
+}
+.download-button:active:not(:disabled) {
+    background-color: #0F0F0F;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.6);
+}
+
+/* Hidden canvas */
+canvas {
+    display: none;
+}
+
+/* Custom message box styling */
+#custom-message-box-overlay {
+    z-index: 2000;
+}
+#custom-message-box-overlay .modal-content {
+    background-color: #0A0A0A;
+    border: 1px solid #00BFFF; /* Electric Blue border */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9);
+    padding: 20px;
+}
+#custom-message-box-overlay h3 {
+    color: #D0D0D0; /* Cyan for prominence, consistent with modal h2 */
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 5px rgba(0, 191, 255, 0.3);
+}
+#custom-message-box-overlay p {
+    color: #B0B0B0; /* Softer grey, consistent with modal details */
+    font-size: 0.85em;
+    margin-bottom: 15px;
+}
+#custom-message-box-overlay .modal-button-group button { /* Targeting the OK button specifically */
+    background-color: #1A1A1A; /* Dark grey base, consistent with other buttons */
+    border-color: #00BFFF; /* Electric Blue border */
+    color: #E0E0E0; /* Light text for contrast */
+}
+#custom-message-box-overlay .modal-button-group button:hover:not(:disabled) {
+     background-color: #2A2A2A;
+     box-shadow: 0 0 8px rgba(0, 173, 239, 0.3);
+}
 }
 
 /* Hidden canvas */

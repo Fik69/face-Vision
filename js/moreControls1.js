@@ -430,4 +430,363 @@ async function processImageForPassport(sourceCanvas, selectedSpecs, selectedReso
 
         // Calculate the actual crop dimensions needed on the original image,
         // maintaining the passport photo's aspect ratio
-        const cropHeightOnOriginal = fin
+        const cropHeightOnOriginal = finalPassportHeight / scaleFactor;
+        const cropWidthOnOriginal = finalPassportWidth / scaleFactor;
+
+        // Center the crop horizontally around the detected face's center
+        const faceCenterXOnOriginal = faceBox.x + faceBox.width / 2;
+        const idealCropX = faceCenterXOnOriginal - (cropWidthOnOriginal / 2);
+
+        // Apply boundary checks to ensure the crop region doesn't go outside the original image
+        let finalCropX = Math.max(0, idealCropX);
+        let finalCropY = Math.max(0, idealCropY);
+        let finalCropWidth = cropWidthOnOriginal;
+        let finalCropHeight = cropHeightOnOriginal;
+
+        // Adjust if crop extends beyond original image width
+        if (finalCropX + finalCropWidth > sourceCanvas.width) {
+            finalCropX = sourceCanvas.width - finalCropWidth;
+            if (finalCropX < 0) finalCropX = 0; // If cropWidth is larger than original image after adjustment
+        }
+        // Adjust if crop extends beyond original image height
+        if (finalCropY + finalCropHeight > sourceCanvas.height) {
+            finalCropY = sourceCanvas.height - finalCropHeight;
+            if (finalCropY < 0) finalCropY = 0; // If cropHeight is larger than original image after adjustment
+        }
+
+        // Create a new canvas to hold the final passport photo
+        const passportCanvas = document.createElement('canvas');
+        passportCanvas.width = finalPassportWidth;
+        passportCanvas.height = finalPassportHeight;
+        const passportContext = passportCanvas.getContext('2d');
+
+        // Draw the determined cropped section from the hidden canvas onto the passport canvas,
+        // scaling it up or down to the final passport photo dimensions.
+        passportContext.drawImage(
+            sourceCanvas,
+            finalCropX, finalCropY, finalCropWidth, finalCropHeight, // Source rectangle on original image
+            0, 0, finalPassportWidth, finalPassportHeight // Destination rectangle on passport photo canvas
+        );
+
+        return passportCanvas.toDataURL('image/png');
+
+    } else {
+        return null; // No face detected
+    }
+}
+
+
+// --- Event Listeners (Main Controls) ---
+
+/**
+ * Event listener for the capture button.
+ * Captures the current video frame, detects faces, crops it to passport size, and displays it in a modal.
+ */
+captureButton.addEventListener('click', async () => {
+    // Ensure models are loaded before attempting detection
+    if (!faceapi.nets.tinyFaceDetector.isLoaded) {
+        modalTitle.textContent = "AI Models Not Ready!";
+        modalPassportPhoto.style.display = 'none';
+        modalCountrySpec.textContent = "Please wait for the models to finish loading.";
+        modalResolutionSpec.textContent = "";
+        showModal(photoModal);
+        return;
+    }
+
+    // Draw the current video frame to a hidden canvas at its native resolution
+    hiddenCanvas.width = video.videoWidth;
+    hiddenCanvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+    // Process the image using the currently selected specs and resolution
+    const outputImageURL = await processImageForPassport(hiddenCanvas, currentSpecs, currentOutputResolution);
+
+    let modalMessage = "NO FACE DETECTED!"; // Default message for no detection
+    if (outputImageURL) {
+        modalMessage = "YOUR PASSPORT PHOTO:";
+    }
+
+    // Show the modal with the result
+    modalTitle.textContent = modalMessage;
+    modalPassportPhoto.src = outputImageURL || ''; // Set src, clear if no image
+    modalPassportPhoto.style.display = outputImageURL ? 'block' : 'none'; // Show/hide image
+    modalCountrySpec.textContent = `Country/Type: ${currentSpecs.name}`;
+    modalResolutionSpec.textContent = `Output Resolution: ${currentOutputResolution.name}`;
+
+    // Populate and set selected values for modal dropdowns for re-processing
+    populateSelect(countrySelectModal, PASSPORT_SPECS, currentSpecs.value);
+    populateSelect(resolutionSelectModal, OUTPUT_RESOLUTIONS, currentOutputResolution.value);
+
+    showModal(photoModal);
+});
+
+/**
+ * Event listener for the "Switch Camera" button.
+ * Toggles between front and rear cameras and re-initializes the stream.
+ */
+switchCameraButton.addEventListener('click', () => {
+    currentFacingMode = (currentFacingMode === 'user' ? 'environment' : 'user');
+    stopFaceDetectionLoop();
+    initCamera(currentFacingMode);
+});
+
+/**
+ * Event listener for the "Pause/Start Detector" button.
+ * Toggles the face detection loop on or off.
+ */
+toggleDetectionButton.addEventListener('click', () => {
+    isDetecting = !isDetecting;
+    if (isDetecting) {
+        startFaceDetectionLoop();
+    } else {
+        stopFaceDetectionLoop();
+    }
+});
+
+/**
+ * Event listener for the main country selection dropdown.
+ * Updates the current passport photo specifications.
+ */
+countrySelect.addEventListener('change', (event) => {
+    currentSpecs = PASSPORT_SPECS[event.target.value];
+    console.log(`Passport specs set to: ${currentSpecs.name}`);
+});
+
+/**
+ * Event listener for the main output resolution selection dropdown.
+ * Updates the desired output resolution.
+ */
+resolutionSelect.addEventListener('change', (event) => {
+    currentOutputResolution = OUTPUT_RESOLUTIONS[event.target.value];
+    console.log(`Output resolution set to: ${currentOutputResolution.name}`);
+});
+
+// --- Event Listeners (Photo Modal Controls) ---
+
+// Universal listener for all 'X' close buttons
+allCloseXButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+        // Find the closest modal-overlay parent and hide it
+        const modalToHide = event.target.closest('.modal-overlay');
+        if (modalToHide) {
+            hideModal(modalToHide);
+        }
+    });
+});
+
+
+/**
+ * Event listener for the "Re-process Photo" button inside the photo modal.
+ * Re-crops the currently captured image based on the selected modal specs/resolution.
+ */
+reprocessButton.addEventListener('click', async () => {
+    const selectedModalCountryValue = countrySelectModal.value;
+    const selectedModalResolutionValue = resolutionSelectModal.value;
+
+    const newSpecs = PASSPORT_SPECS[selectedModalCountryValue];
+    const newResolution = OUTPUT_RESOLUTIONS[selectedModalResolutionValue];
+
+    if (hiddenCanvas.width === 0 || hiddenCanvas.height === 0) {
+        console.error("Original image data not found in hiddenCanvas for re-processing.");
+        modalTitle.textContent = "Error: Original image not found for re-processing.";
+        modalPassportPhoto.style.display = 'none';
+        modalCountrySpec.textContent = "";
+        modalResolutionSpec.textContent = "";
+        return;
+    }
+
+    const outputImageURL = await processImageForPassport(hiddenCanvas, newSpecs, newResolution);
+
+    if (outputImageURL) {
+        modalPassportPhoto.src = outputImageURL;
+        modalTitle.textContent = "YOUR PASSPORT PHOTO (RE-PROCESSED):";
+        modalPassportPhoto.style.display = 'block';
+    } else {
+        modalTitle.textContent = "NO FACE DETECTED IN THE RE-PROCESSED PHOTO!";
+        modalPassportPhoto.style.display = 'none';
+    }
+    modalCountrySpec.textContent = `Country/Type: ${newSpecs.name}`;
+    modalResolutionSpec.textContent = `Output Resolution: ${newResolution.name}`;
+});
+
+/**
+ * Event listener for the "Download Photo" button inside the photo modal.
+ * Triggers download of the currently displayed passport photo.
+ */
+downloadButton.addEventListener('click', () => {
+    const imageUrl = modalPassportPhoto.src;
+    if (imageUrl && imageUrl !== '') {
+        const a = document.createElement('a');
+        a.href = imageUrl;
+        // Generate a more descriptive filename based on specs
+        const filename = `passport_${currentSpecs.value}_${currentOutputResolution.value}_${Date.now()}.png`;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } else {
+         // Use a custom message box instead of alert()
+        showCustomMessageBox("NO PHOTO TO DOWNLOAD! PLEASE CAPTURE OR RE-PROCESS A PHOTO FIRST.");
+    }
+});
+
+// --- Event Listeners (Inline Developer Settings Controls) ---
+
+/**
+ * Event listeners for Input Size slider and number input (syncing and updating detector).
+ */
+inputSizeSlider.addEventListener('input', (event) => {
+    const val = parseInt(event.target.value);
+    currentInputSize = val;
+    inputSizeNumber.value = val;
+    console.log(`Input Size set to: ${currentInputSize}`);
+    // Restart detection loop to apply new input size
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+inputSizeNumber.addEventListener('change', (event) => {
+    let val = parseInt(event.target.value);
+    // Ensure it's a multiple of 32 and within allowed range
+    const min = parseInt(inputSizeNumber.min);
+    const max = parseInt(inputSizeNumber.max);
+    val = Math.max(min, Math.min(max, val));
+    val = Math.round(val / 32) * 32; // Snap to nearest multiple of 32
+    event.target.value = val; // Update input field to corrected value
+    currentInputSize = val;
+    inputSizeSlider.value = val; // Sync slider
+    console.log(`Input Size (manual) set to: ${currentInputSize}`);
+    // Restart detection loop to apply new input size
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+
+/**
+ * Event listeners for Score Threshold slider and number input (syncing and updating detector).
+ */
+scoreThresholdSlider.addEventListener('input', (event) => {
+    const val = parseFloat(event.target.value);
+    currentScoreThreshold = val;
+    scoreThresholdNumber.value = val.toFixed(2); // Display with 2 decimal places
+    console.log(`Score Threshold set to: ${currentScoreThreshold}`);
+    // Restart detection loop to apply new score threshold
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+scoreThresholdNumber.addEventListener('change', (event) => {
+    let val = parseFloat(event.target.value);
+    // Ensure it's within allowed range and snaps to step
+    const min = parseFloat(scoreThresholdNumber.min);
+    const max = parseFloat(scoreThresholdNumber.max);
+    const step = parseFloat(scoreThresholdNumber.step);
+    val = Math.max(min, Math.min(max, val));
+    val = Math.round(val * (1 / step)) / (1 / step); // Snap to nearest step
+    event.target.value = val.toFixed(2); // Update input field to corrected value
+    currentScoreThreshold = val;
+    scoreThresholdSlider.value = val; // Sync slider
+    console.log(`Score Threshold (manual) set to: ${currentScoreThreshold}`);
+    // Restart detection loop to apply new score threshold
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+
+/**
+ * Event listeners for Skip Frames slider and number input (syncing and updating detector).
+ */
+skipFramesSlider.addEventListener('input', (event) => {
+    const val = parseInt(event.target.value);
+    currentFramesToSkip = val;
+    skipFramesNumber.value = val;
+    console.log(`Detector update frequency: Every ${currentFramesToSkip + 1}th frame.`);
+    // Restart detection loop to apply new skip value
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+skipFramesNumber.addEventListener('change', (event) => {
+    let val = parseInt(event.target.value);
+    const min = parseInt(skipFramesNumber.min);
+    const max = parseInt(skipFramesNumber.max);
+    val = Math.max(min, Math.min(max, val));
+    event.target.value = val; // Update input field to corrected value
+    currentFramesToSkip = val;
+    skipFramesSlider.value = val; // Sync slider
+    console.log(`Detector update frequency (manual): Every ${currentFramesToSkip + 1}th frame.`);
+    // Restart detection loop to apply new skip value
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+
+/**
+ * NEW: Event listeners for Face Scale slider and number input.
+ */
+faceScaleSlider.addEventListener('input', (event) => {
+    const val = parseFloat(event.target.value);
+    currentFaceScaleHeight = val;
+    faceScaleNumber.value = val.toFixed(2);
+    console.log(`Face Scale Height set to: ${currentFaceScaleHeight}`);
+});
+faceScaleNumber.addEventListener('change', (event) => {
+    let val = parseFloat(event.target.value);
+    const min = parseFloat(faceScaleNumber.min);
+    const max = parseFloat(faceScaleNumber.max);
+    const step = parseFloat(faceScaleNumber.step);
+    val = Math.max(min, Math.min(max, val));
+    val = Math.round(val * (1 / step)) / (1 / step);
+    event.target.value = val.toFixed(2);
+    currentFaceScaleHeight = val;
+    faceScaleSlider.value = val;
+    console.log(`Face Scale Height (manual) set to: ${currentFaceScaleHeight}`);
+});
+
+/**
+ * NEW: Event listeners for Head Offset slider and number input.
+ */
+headOffsetSlider.addEventListener('input', (event) => {
+    const val = parseFloat(event.target.value);
+    currentFaceOffsetTopRatio = val;
+    headOffsetNumber.value = val.toFixed(2);
+    console.log(`Head Offset Top Ratio set to: ${currentFaceOffsetTopRatio}`);
+});
+headOffsetNumber.addEventListener('change', (event) => {
+    let val = parseFloat(event.target.value);
+    const min = parseFloat(headOffsetNumber.min);
+    const max = parseFloat(headOffsetNumber.max);
+    const step = parseFloat(headOffsetNumber.step);
+    val = Math.max(min, Math.min(max, val));
+    val = Math.round(val * (1 / step)) / (1 / step);
+    event.target.value = val.toFixed(2);
+    currentFaceOffsetTopRatio = val;
+    headOffsetSlider.value = val;
+    console.log(`Head Offset Top Ratio (manual) set to: ${currentFaceOffsetTopRatio}`);
+});
+
+
+/**
+ * Custom Message Box Function (replaces alert())
+ */
+function showCustomMessageBox(message) {
+    customMessageBoxContent.textContent = message;
+    showModal(customMessageBoxOverlay);
+}
+
+// Event listener for the custom message box's OK button
+customMessageBoxButton.addEventListener('click', () => {
+    hideModal(customMessageBoxOverlay);
+});
+
+
+// --- Initial Application Setup ---
+
+// Start the camera and model loading process when the window has fully loaded
+window.addEventListener('load', () => initCamera(currentFacingMode));
