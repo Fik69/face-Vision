@@ -1,0 +1,200 @@
+/* --- Modal Styling --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0.25s, opacity 0.25s ease-out;
+}
+.modal-overlay.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: #0A0A0A;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9);
+    text-align: center;
+    max-width: 95vw;
+    max-height: 95vh;
+    overflow-y: auto;
+    position: relative; /* Needed for absolute positioning of close button */
+    transform: translateY(10px);
+    transition: transform 0.25s ease-out;
+    color: #e0e0e0;
+    border: 1px solid #00BFFF; /* Electric Blue border */
+}
+
+.modal-content h2 {
+    color: #D0D0D0; /* Changed to match main heading for consistency */
+    margin-top: 10px; /* Smaller top margin */
+    margin-bottom: 10px; /* Smaller bottom margin */
+    font-size: 1.2em; /* Smaller font size */
+    font-weight: bold; /* Keep bold */
+    text-transform: uppercase; /* Changed to uppercase for consistency */
+    letter-spacing: 0.08em; /* Adjusted letter spacing */
+    text-shadow: 0 0 5px rgba(0, 191, 255, 0.3); /* Added electric blue glow */
+}
+
+#modal-passport-photo {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #202020;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    margin-bottom: 15px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.modal-details {
+    margin-bottom: 15px;
+    color: #B0B0B0; /* Changed to a softer grey for details */
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.modal-details p {
+    margin: 3px 0;
+}
+
+/* Modal controls and button groups - consistent grid for compactness */
+.modal-controls, .modal-button-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+@media (min-width: 480px) {
+    .modal-controls, .modal-button-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 768px) {
+    .modal-controls, .modal-button-group {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+}
+/* Specific sizing for modal buttons/selects */
+.modal-controls select, .modal-controls .slider-group,
+.modal-button-group button {
+    width: 100%;
+    padding: 12px 18px;
+    font-size: 0.95em;
+    margin: 0;
+}
+
+
+/* Modal specific button colors */
+.modal-close-button-x { /* New class for the X button */
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #1A1A1A; /* Dark background for the box, consistent with other buttons */
+    border: 1px solid #00BFFF; /* Electric blue border, consistent with other buttons */
+    color: #00FFFF; /* Cyan color for the X, consistent with theme */
+    width: 35px; /* Square box */
+    height: 35px; /* Square box */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8em; /* Larger X */
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0; /* Remove padding for better control of size */
+    line-height: 1; /* Center X vertically */
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.15s ease-in-out;
+    box-shadow: 0 0 5px rgba(0, 191, 255, 0.4); /* Subtle electric blue glow */
+    border-radius: 4px; /* Slight rounding for the box */
+}
+.modal-close-button-x:hover {
+    background-color: #2A2A2A; /* Slightly lighter on hover */
+    border-color: #00FFFF; /* Brighter cyan on hover */
+    color: #00FFFF; /* Brighter cyan on hover */
+    transform: scale(1.05); /* Slight scale on hover */
+    box-shadow: 0 0 8px rgba(0, 191, 255, 0.6);
+}
+.modal-close-button-x:active {
+    background-color: #0F0F0F; /* Even darker on active */
+    border-color: #008DCC; /* Darker electric blue on active */
+    color: #00BFFF; /* Darker electric blue on active */
+    transform: scale(0.95);
+}
+
+.reprocess-button {
+    background-color: #1A1A1A; /* Dark grey base, consistent with other buttons */
+    border-color: #00BFFF; /* Electric Blue border */
+    color: #E0E0E0; /* Light text for contrast */
+}
+.reprocess-button:hover:not(:disabled) {
+    background-color: #2A2A2A;
+    box-shadow: 0 0 12px rgba(0, 191, 255, 0.6); /* Electric blue glow */
+}
+.reprocess-button:active:not(:disabled) {
+    background-color: #0F0F0F;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.6);
+}
+
+.download-button {
+    background-color: #1A1A1A; /* Dark grey base, consistent with other buttons */
+    border-color: #00BFFF; /* Electric Blue border */
+    color: #E0E0E0; /* Light text for contrast */
+}
+.download-button:hover:not(:disabled) {
+    background-color: #2A2A2A;
+    box-shadow: 0 0 12px rgba(0, 191, 255, 0.6); /* Electric blue glow */
+}
+.download-button:active:not(:disabled) {
+    background-color: #0F0F0F;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.6);
+}
+
+/* Hidden canvas */
+canvas {
+    display: none;
+}
+
+/* Custom message box styling */
+#custom-message-box-overlay {
+    z-index: 2000;
+}
+#custom-message-box-overlay .modal-content {
+    background-color: #0A0A0A;
+    border: 1px solid #00BFFF; /* Electric Blue border */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9);
+    padding: 20px;
+}
+#custom-message-box-overlay h3 {
+    color: #D0D0D0; /* Cyan for prominence, consistent with modal h2 */
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 5px rgba(0, 191, 255, 0.3);
+}
+#custom-message-box-overlay p {
+    color: #B0B0B0; /* Softer grey, consistent with modal details */
+    font-size: 0.85em;
+    margin-bottom: 15px;
+}
+#custom-message-box-overlay .modal-button-group button { /* Targeting the OK button specifically */
+    background-color: #1A1A1A; /* Dark grey base, consistent with other buttons */
+    border-color: #00BFFF; /* Electric Blue border */
+    color: #E0E0E0; /* Light text for contrast */
+}
+#custom-message-box-overlay .modal-button-group button:hover:not(:disabled) {
+     background-color: #2A2A2A;
+     box-shadow: 0 0 8px rgba(0, 173, 239, 0.3);
+}
