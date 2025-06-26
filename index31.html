@@ -6,7 +6,7 @@
     <title>Passport Photo Maker</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/black2modal.css">
+    <link rel="stylesheet" href="/css/black1.css">
 </head>
 <body class="bg-black text-gray-200 flex flex-col items-center justify-start min-h-screen px-1 pb-4 pt-1 sm:p-5">
     <h1 class="text-neutral-300 mt-1 mb-1 text-xl sm:text-2xl font-bold uppercase tracking-widest text-shadow-md">Passport Photo Maker</h1>
@@ -55,34 +55,31 @@
         </div>
 
         <div class="slider-group">
-            <label for="face-scale-slider">Face Scale Height (%): <input type="number" id="face-scale-number" min="0.5" max="0.9" step="0.01" value="0.75" disabled></label>
-            <input type="range" id="face-scale-slider" min="0.5" max="0.9" step="0.01" value="0.75" disabled>
-            <p class="slider-note">Percentage of photo height for face.</p>
+            <label for="height-above-head-slider">Height Above Head (Ratio): <input type="number" id="height-above-head-number" min="0.0" max="0.5" step="0.01" value="0.10" disabled></label>
+            <input type="range" id="height-above-head-slider" min="0.0" max="0.5" step="0.01" value="0.10" disabled>
+            <p class="slider-note">Ratio of photo height for space above head.</p>
         </div>
 
         <div class="slider-group">
-            <label for="head-offset-slider">Head Offset Top Ratio: <input type="number" id="head-offset-number" min="0.0" max="0.2" step="0.005" value="0.1" disabled></label>
-            <input type="range" id="head-offset-slider" min="0.0" max="0.2" step="0.005" value="0.1" disabled>
-            <p class="slider-note">Ratio of photo height for head start from top.</p>
+            <label for="face-scale-slider">Face Scale (Height Ratio): <input type="number" id="face-scale-number" min="0.5" max="0.9" step="0.01" value="0.75" disabled></label>
+            <input type="range" id="face-scale-slider" min="0.5" max="0.9" step="0.01" value="0.75" disabled>
+            <p class="slider-note">Ratio of photo height for face height.</p>
         </div>
-
     </div>
 
     <canvas id="hidden-canvas" class="hidden"></canvas>
 
     <div id="photo-modal" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-button-x">&times;</button>
-            <h2 id="modal-title">Your Passport Photo:</h2>
-            <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
-             <div class="modal-details">
+            <button class="modal-close-button-x">&times;</button> <div class="modal-details">
                 <p id="modal-country-spec"></p>
                 <p id="modal-resolution-spec"></p>
             </div>
+            <h2 id="modal-title">Your Passport Photo:</h2>
+            <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
 
             <div class="modal-button-group">
-                <button id="download-button" class="download-button">Download Photo</button>
-                <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
+                <button id="download-button" class="download-button">Download Photo</button> <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
             </div>
             <div class="modal-controls">
                 <select id="country-select-modal"></select>
@@ -93,16 +90,14 @@
 
     <div id="custom-message-box-overlay" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-button-x">&times;</button>
-            <h3>Information</h3>
+            <button class="modal-close-button-x">&times;</button> <h3>Information</h3>
             <p></p>
             <div class="modal-button-group">
-                 <button>OK</button>
-            </div>
+                 <button>OK</button> </div>
         </div>
     </div>
 
     <script src="face-api.js/dist/face-api.min.js"></script>
-    <script src="js/moreControls1.js"></script>
+    <script src="js/moDev.js"></script>
 </body>
 </html>

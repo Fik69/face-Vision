@@ -36,12 +36,13 @@ const scoreThresholdNumber = document.getElementById('score-threshold-number');
 const skipFramesSlider = document.getElementById('skip-frames-slider');
 const skipFramesNumber = document.getElementById('skip-frames-number');
 
-// NEW: Face Scale and Head Offset controls
+// NEW: Height Above Head controls
+const heightAboveHeadSlider = document.getElementById('height-above-head-slider');
+const heightAboveHeadNumber = document.getElementById('height-above-head-number');
+
+// NEW: Face Scale controls
 const faceScaleSlider = document.getElementById('face-scale-slider');
 const faceScaleNumber = document.getElementById('face-scale-number');
-const headOffsetSlider = document.getElementById('head-offset-slider');
-const headOffsetNumber = document.getElementById('head-offset-number');
-
 
 // Custom Message Box elements
 const customMessageBoxOverlay = document.getElementById('custom-message-box-overlay');
@@ -61,7 +62,6 @@ const PASSPORT_SPECS = {
         value: 'standard',
         name: 'Standard (EU/Intl)', // More descriptive label
         aspectRatio: 35 / 45, // width / height
-        // These are now default values, can be overridden by dev settings
         faceScaleHeight: 0.75, // 70-80% of photo height for face
         faceOffsetTopRatio: 0.1 // 10-12% from top for head start
     },
@@ -69,7 +69,6 @@ const PASSPORT_SPECS = {
         value: 'usa',
         name: 'USA (2x2 inch)',
         aspectRatio: 1, // perfect square
-        // These are now default values, can be overridden by dev settings
         faceScaleHeight: 0.70, // Face should be 1 to 1 3/8 inches (approx 60-75% height)
         faceOffsetTopRatio: 0.08 // Head should be 1/8 to 1/2 inch from top
     },
@@ -105,9 +104,9 @@ let currentFramesToSkip = parseInt(skipFramesNumber.value); // Use number input 
 let currentInputSize = parseInt(inputSizeNumber.value); // Use number input value as initial
 let currentScoreThreshold = parseFloat(scoreThresholdNumber.value); // Use number input value as initial
 
-// NEW: Initialize current face scale and head offset from developer settings
-let currentFaceScaleHeight = parseFloat(faceScaleNumber.value);
-let currentFaceOffsetTopRatio = parseFloat(headOffsetNumber.value);
+// NEW: Initialize current developer cropping settings
+let currentHeightAboveHead = parseFloat(heightAboveHeadNumber.value);
+let currentFaceScale = parseFloat(faceScaleNumber.value);
 
 
 let currentFacingMode = 'user';
@@ -191,10 +190,12 @@ async function initCamera(facingMode) {
     scoreThresholdNumber.disabled = true;
     skipFramesSlider.disabled = true;
     skipFramesNumber.disabled = true;
-    faceScaleSlider.disabled = true; // NEW
-    faceScaleNumber.disabled = true; // NEW
-    headOffsetSlider.disabled = true; // NEW
-    headOffsetNumber.disabled = true; // NEW
+    
+    // NEW: Disable new developer controls
+    heightAboveHeadSlider.disabled = true;
+    heightAboveHeadNumber.disabled = true;
+    faceScaleSlider.disabled = true;
+    faceScaleNumber.disabled = true;
 
 
     loadingMessage.style.display = 'block';
@@ -239,10 +240,12 @@ async function initCamera(facingMode) {
         scoreThresholdNumber.disabled = true;
         skipFramesSlider.disabled = true;
         skipFramesNumber.disabled = true;
-        faceScaleSlider.disabled = true; // NEW
-        faceScaleNumber.disabled = true; // NEW
-        headOffsetSlider.disabled = true; // NEW
-        headOffsetNumber.disabled = true; // NEW
+
+        // NEW: Keep new developer controls disabled
+        heightAboveHeadSlider.disabled = true;
+        heightAboveHeadNumber.disabled = true;
+        faceScaleSlider.disabled = true;
+        faceScaleNumber.disabled = true;
     }
 }
 
@@ -281,10 +284,12 @@ async function loadModelsAndStartDetection() {
         scoreThresholdNumber.disabled = false;
         skipFramesSlider.disabled = false;
         skipFramesNumber.disabled = false;
-        faceScaleSlider.disabled = false; // NEW
-        faceScaleNumber.disabled = false; // NEW
-        headOffsetSlider.disabled = false; // NEW
-        headOffsetNumber.disabled = false; // NEW
+
+        // NEW: Enable new developer controls
+        heightAboveHeadSlider.disabled = false;
+        heightAboveHeadNumber.disabled = false;
+        faceScaleSlider.disabled = false;
+        faceScaleNumber.disabled = false;
 
 
         startFaceDetectionLoop(); // Start continuous face detection for the overlay
@@ -312,10 +317,12 @@ async function loadModelsAndStartDetection() {
         scoreThresholdNumber.disabled = true;
         skipFramesSlider.disabled = true;
         skipFramesNumber.disabled = true;
-        faceScaleSlider.disabled = true; // NEW
-        faceScaleNumber.disabled = true; // NEW
-        headOffsetSlider.disabled = true; // NEW
-        headOffsetNumber.disabled = true; // NEW
+
+        // NEW: Keep new developer controls disabled
+        heightAboveHeadSlider.disabled = true;
+        heightAboveHeadNumber.disabled = true;
+        faceScaleSlider.disabled = true;
+        faceScaleNumber.disabled = true;
     }
 }
 
@@ -346,13 +353,51 @@ async function startFaceDetectionLoop() {
                         // Resize the detection results to match the video element's display size
                         const displaySize = { width: video.offsetWidth, height: video.offsetHeight };
                         const resizedDetection = faceapi.resizeResults(detections, displaySize);
-                        const box = resizedDetection.box;
+                        const faceBox = resizedDetection.box;
+
+                        // Create a temporary specs object that incorporates developer settings for the overlay
+                        // This allows the overlay to react to dev settings without changing the capture settings immediately
+                        const tempSpecsForOverlay = {
+                            aspectRatio: currentSpecs.aspectRatio, // Keep the selected country's aspect ratio
+                            faceScaleHeight: currentFaceScale, // Use developer's face scale
+                            faceOffsetTopRatio: currentHeightAboveHead // Use developer's height above head
+                        };
+
+                        // Calculate overlay box dimensions based on the *developer settings*
+                        const targetFaceHeightPx = displaySize.height * tempSpecsForOverlay.faceScaleHeight;
+                        const scaleFactor = targetFaceHeightPx / faceBox.height;
+
+                        const overlayHeight = displaySize.height; // Overlay will be the full video height
+                        const overlayWidth = overlayHeight * tempSpecsForOverlay.aspectRatio; // Calculate width based on aspect ratio
+
+                        // Calculate ideal crop Y on the *displayed video frame*, considering the face's position
+                        const idealOverlayY = faceBox.y - (overlayHeight * tempSpecsForOverlay.faceOffsetTopRatio);
+
+                        // Calculate ideal crop X on the *displayed video frame*, centering the face
+                        const faceCenterXOnDisplay = faceBox.x + faceBox.width / 2;
+                        const idealOverlayX = faceCenterXOnDisplay - (overlayWidth / 2);
+                        
+                        // Apply boundary checks to keep overlay within video frame
+                        let finalOverlayX = Math.max(0, idealOverlayX);
+                        let finalOverlayY = Math.max(0, idealOverlayY);
+
+                        // Adjust if overlay extends beyond video width (shouldn't happen often if aspect ratio is considered)
+                        if (finalOverlayX + overlayWidth > displaySize.width) {
+                            finalOverlayX = displaySize.width - overlayWidth;
+                            if (finalOverlayX < 0) finalOverlayX = 0;
+                        }
+                        // Adjust if overlay extends beyond video height (shouldn't happen often)
+                        if (finalOverlayY + overlayHeight > displaySize.height) {
+                            finalOverlayY = displaySize.height - overlayHeight;
+                            if (finalOverlayY < 0) finalOverlayY = 0;
+                        }
+
 
                         // Update the overlay box's position and size
-                        overlayBox.style.left = `${box.x}px`;
-                        overlayBox.style.top = `${box.y}px`;
-                        overlayBox.style.width = `${box.width}px`;
-                        overlayBox.style.height = `${box.height}px`;
+                        overlayBox.style.left = `${finalOverlayX}px`;
+                        overlayBox.style.top = `${finalOverlayY}px`;
+                        overlayBox.style.width = `${overlayWidth}px`;
+                        overlayBox.style.height = `${overlayHeight}px`;
                         overlayBox.style.display = 'block'; // Show the overlay
                     } else {
                         overlayBox.style.display = 'none'; // Hide if no face detected
@@ -369,7 +414,7 @@ async function startFaceDetectionLoop() {
         }
         animationFrameId = requestAnimationFrame(detectFaces); // Start the first frame of the loop
         toggleDetectionButton.textContent = 'Pause Detector'; // Update button text
-        overlayBox.style.display = 'block'; // Ensure overlay is visible if starting
+        // Note: overlayBox.style.display is set inside detectFaces, but ensure it's not 'none' initially if detection starts
     }
 }
 
@@ -414,19 +459,35 @@ async function processImageForPassport(sourceCanvas, selectedSpecs, selectedReso
             finalPassportWidth = finalPassportHeight * selectedSpecs.aspectRatio;
         }
 
-        // --- Passport Cropping Logic based on current developer settings ---
-        const desiredFaceScaleHeight = currentFaceScaleHeight; // Use value from dev setting
-        const desiredFaceOffsetTopRatio = currentFaceOffsetTopRatio; // Use value from dev setting
+        // --- Passport Cropping Logic based on current country specs AND developer settings ---
+        // For actual photo processing, prioritize developer settings if they are "active"
+        // For simplicity here, we'll use the values passed in selectedSpecs, assuming
+        // that currentHeightAboveHead and currentFaceScale have already been integrated
+        // into selectedSpecs if they are meant to override the country defaults.
+        // A more robust solution might pass the dev settings directly to this function
+        // or create a merged specs object before calling this function.
+
+        // For now, let's assume selectedSpecs will *incorporate* the developer overrides
+        // when this function is called from the capture/reprocess button.
+        // To achieve this, the captureButton and reprocessButton listeners
+        // will need to construct a new `specs` object to pass here.
+        // Let's refine this: the `currentSpecs` will be updated by the country select.
+        // The dev settings (currentHeightAboveHead, currentFaceScale) will *override*
+        // parts of `currentSpecs` for the purpose of the final crop.
+
+        const effectiveFaceScaleHeight = currentFaceScale; // Use developer value for actual crop
+        const effectiveFaceOffsetTopRatio = currentHeightAboveHead; // Use developer value for actual crop
+
 
         // Calculate the target height of the face within the final passport photo
-        const targetFaceHeightPx = finalPassportHeight * desiredFaceScaleHeight;
+        const targetFaceHeightPx = finalPassportHeight * effectiveFaceScaleHeight;
 
         // Calculate the scaling factor needed to make the detected face match the target size
         const scaleFactor = targetFaceHeightPx / faceBox.height;
 
         // Calculate the ideal starting Y-coordinate for the crop on the original image
         // This ensures the top of the head is at the desired offset in the final passport photo
-        const idealCropY = faceBox.y - (finalPassportHeight * desiredFaceOffsetTopRatio / scaleFactor);
+        const idealCropY = faceBox.y - (finalPassportHeight * effectiveFaceOffsetTopRatio / scaleFactor);
 
         // Calculate the actual crop dimensions needed on the original image,
         // maintaining the passport photo's aspect ratio
@@ -498,19 +559,28 @@ captureButton.addEventListener('click', async () => {
     hiddenCanvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
 
-    // Process the image using the currently selected specs and resolution
-    const outputImageURL = await processImageForPassport(hiddenCanvas, currentSpecs, currentOutputResolution);
+    // When capturing, we want to use the currently selected country's aspect ratio
+    // but the developer's height above head and face scale settings for precise cropping.
+    const specsForCapture = {
+        aspectRatio: currentSpecs.aspectRatio,
+        faceScaleHeight: currentFaceScale, // Use developer value
+        faceOffsetTopRatio: currentHeightAboveHead // Use developer value
+    };
 
-    let modalMessage = "NO FACE DETECTED!"; // Default message for no detection
+    // Process the image using the combined specs and currently selected resolution
+    const outputImageURL = await processImageForPassport(hiddenCanvas, specsForCapture, currentOutputResolution);
+
+    let modalMessage = "No face detected in the photo!"; // Default message for no detection
     if (outputImageURL) {
-        modalMessage = "YOUR PASSPORT PHOTO:";
+        modalMessage = "Your Passport Photo:";
     }
 
     // Show the modal with the result
     modalTitle.textContent = modalMessage;
     modalPassportPhoto.src = outputImageURL || ''; // Set src, clear if no image
     modalPassportPhoto.style.display = outputImageURL ? 'block' : 'none'; // Show/hide image
-    modalCountrySpec.textContent = `Country/Type: ${currentSpecs.name}`;
+    // Display the *actual* specs used for consistency, which now include dev overrides
+    modalCountrySpec.textContent = `Country/Type: ${currentSpecs.name} (Dev Overrides Applied)`;
     modalResolutionSpec.textContent = `Output Resolution: ${currentOutputResolution.name}`;
 
     // Populate and set selected values for modal dropdowns for re-processing
@@ -550,6 +620,11 @@ toggleDetectionButton.addEventListener('click', () => {
 countrySelect.addEventListener('change', (event) => {
     currentSpecs = PASSPORT_SPECS[event.target.value];
     console.log(`Passport specs set to: ${currentSpecs.name}`);
+    // Re-start detection to update overlay instantly when country changes
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
 });
 
 /**
@@ -595,17 +670,25 @@ reprocessButton.addEventListener('click', async () => {
         return;
     }
 
-    const outputImageURL = await processImageForPassport(hiddenCanvas, newSpecs, newResolution);
+    // For re-processing from the modal, we apply the modal's selected country
+    // but still respect the active developer overrides for heightAboveHead and faceScale.
+    const specsForReprocess = {
+        aspectRatio: newSpecs.aspectRatio,
+        faceScaleHeight: currentFaceScale, // Use developer value
+        faceOffsetTopRatio: currentHeightAboveHead // Use developer value
+    };
+
+    const outputImageURL = await processImageForPassport(hiddenCanvas, specsForReprocess, newResolution);
 
     if (outputImageURL) {
         modalPassportPhoto.src = outputImageURL;
-        modalTitle.textContent = "YOUR PASSPORT PHOTO (RE-PROCESSED):";
+        modalTitle.textContent = "Your Passport Photo (Re-processed):";
         modalPassportPhoto.style.display = 'block';
     } else {
-        modalTitle.textContent = "NO FACE DETECTED IN THE RE-PROCESSED PHOTO!";
+        modalTitle.textContent = "No face detected in the re-processed photo!";
         modalPassportPhoto.style.display = 'none';
     }
-    modalCountrySpec.textContent = `Country/Type: ${newSpecs.name}`;
+    modalCountrySpec.textContent = `Country/Type: ${newSpecs.name} (Dev Overrides Applied)`;
     modalResolutionSpec.textContent = `Output Resolution: ${newResolution.name}`;
 });
 
@@ -618,15 +701,15 @@ downloadButton.addEventListener('click', () => {
     if (imageUrl && imageUrl !== '') {
         const a = document.createElement('a');
         a.href = imageUrl;
-        // Generate a more descriptive filename based on specs
-        const filename = `passport_${currentSpecs.value}_${currentOutputResolution.value}_${Date.now()}.png`;
+        // Generate a more descriptive filename based on specs, including dev settings for clarity
+        const filename = `passport_${currentSpecs.value}_${currentOutputResolution.value}_HAH-${currentHeightAboveHead.toFixed(2)}_FS-${currentFaceScale.toFixed(2)}_${Date.now()}.png`;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
     } else {
          // Use a custom message box instead of alert()
-        showCustomMessageBox("NO PHOTO TO DOWNLOAD! PLEASE CAPTURE OR RE-PROCESS A PHOTO FIRST.");
+        showCustomMessageBox("No photo to download! Please capture or re-process a photo first.");
     }
 });
 
@@ -727,14 +810,47 @@ skipFramesNumber.addEventListener('change', (event) => {
     }
 });
 
-/**
- * NEW: Event listeners for Face Scale slider and number input.
- */
+// NEW: Event listeners for Height Above Head slider and number input
+heightAboveHeadSlider.addEventListener('input', (event) => {
+    const val = parseFloat(event.target.value);
+    currentHeightAboveHead = val;
+    heightAboveHeadNumber.value = val.toFixed(2);
+    console.log(`Height Above Head (Ratio) set to: ${currentHeightAboveHead}`);
+    // Re-start detection to update overlay instantly
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+heightAboveHeadNumber.addEventListener('change', (event) => {
+    let val = parseFloat(event.target.value);
+    const min = parseFloat(heightAboveHeadNumber.min);
+    const max = parseFloat(heightAboveHeadNumber.max);
+    const step = parseFloat(heightAboveHeadNumber.step);
+    val = Math.max(min, Math.min(max, val));
+    val = Math.round(val * (1 / step)) / (1 / step);
+    event.target.value = val.toFixed(2);
+    currentHeightAboveHead = val;
+    heightAboveHeadSlider.value = val;
+    console.log(`Height Above Head (Ratio - manual) set to: ${currentHeightAboveHead}`);
+    // Re-start detection to update overlay instantly
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
+});
+
+// NEW: Event listeners for Face Scale slider and number input
 faceScaleSlider.addEventListener('input', (event) => {
     const val = parseFloat(event.target.value);
-    currentFaceScaleHeight = val;
+    currentFaceScale = val;
     faceScaleNumber.value = val.toFixed(2);
-    console.log(`Face Scale Height set to: ${currentFaceScaleHeight}`);
+    console.log(`Face Scale (Height Ratio) set to: ${currentFaceScale}`);
+    // Re-start detection to update overlay instantly
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
 });
 faceScaleNumber.addEventListener('change', (event) => {
     let val = parseFloat(event.target.value);
@@ -744,31 +860,14 @@ faceScaleNumber.addEventListener('change', (event) => {
     val = Math.max(min, Math.min(max, val));
     val = Math.round(val * (1 / step)) / (1 / step);
     event.target.value = val.toFixed(2);
-    currentFaceScaleHeight = val;
+    currentFaceScale = val;
     faceScaleSlider.value = val;
-    console.log(`Face Scale Height (manual) set to: ${currentFaceScaleHeight}`);
-});
-
-/**
- * NEW: Event listeners for Head Offset slider and number input.
- */
-headOffsetSlider.addEventListener('input', (event) => {
-    const val = parseFloat(event.target.value);
-    currentFaceOffsetTopRatio = val;
-    headOffsetNumber.value = val.toFixed(2);
-    console.log(`Head Offset Top Ratio set to: ${currentFaceOffsetTopRatio}`);
-});
-headOffsetNumber.addEventListener('change', (event) => {
-    let val = parseFloat(event.target.value);
-    const min = parseFloat(headOffsetNumber.min);
-    const max = parseFloat(headOffsetNumber.max);
-    const step = parseFloat(headOffsetNumber.step);
-    val = Math.max(min, Math.min(max, val));
-    val = Math.round(val * (1 / step)) / (1 / step);
-    event.target.value = val.toFixed(2);
-    currentFaceOffsetTopRatio = val;
-    headOffsetSlider.value = val;
-    console.log(`Head Offset Top Ratio (manual) set to: ${currentFaceOffsetTopRatio}`);
+    console.log(`Face Scale (Height Ratio - manual) set to: ${currentFaceScale}`);
+    // Re-start detection to update overlay instantly
+    if (isDetecting) {
+        stopFaceDetectionLoop();
+        startFaceDetectionLoop();
+    }
 });
 
 
