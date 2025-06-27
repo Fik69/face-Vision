@@ -39,10 +39,9 @@ h1 {
 /* Video container - sharp, integrated look */
 #video-container {
     position: relative;
-    /* width and aspect-ratio will be set dynamically by JS based on new dev options */
-    width: 98vw; /* Default, will be overridden */
+    width: 98vw;
     max-width: 600px;
-    aspect-ratio: 4/3; /* Default, will be overridden */
+    aspect-ratio: 4/3;
     background-color: #080808; /* Very dark grey, almost black */
     border-radius: 4px; /* Minimal rounding */
     overflow: hidden;
@@ -63,32 +62,16 @@ video {
     display: block;
 }
 
-/* Overlay box - NOW DYNAMICALLY COLORED & SIZED */
+/* Overlay box - sharp, functional, vibrant */
 #overlay-box {
     position: absolute;
-    border: 2px solid #00FFFF; /* Default Cyan, will change based on compliance */
+    border: 2px solid #00FFFF; /* Neon Cyan for clear feedback */
     box-sizing: border-box;
     pointer-events: none;
-    display: none; /* Hidden by default until face detected */
+    display: none;
     border-radius: 2px; /* Very minimal rounding */
     box-shadow: 0 0 8px rgba(0, 255, 255, 0.6); /* Matching neon glow */
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth color transitions */
 }
-
-/* Compliance Colors for Overlay Box */
-.overlay-box-green {
-    border-color: #00FF00 !important; /* Bright Green */
-    box-shadow: 0 0 8px rgba(0, 255, 0, 0.6) !important;
-}
-.overlay-box-yellow {
-    border-color: #FFFF00 !important; /* Yellow */
-    box-shadow: 0 0 8px rgba(255, 255, 0, 0.6) !important;
-}
-.overlay-box-red {
-    border-color: #FF0000 !important; /* Red */
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.6) !important;
-}
-
 
 /* General button styling - Borg-like, angular, tactile */
 button {
@@ -526,69 +509,38 @@ canvas {
      background-color: #2A2A2A;
      box-shadow: 0 0 8px rgba(0, 173, 239, 0.3);
 }
-
-
-/* --- Static Guide Elements --- */
-/* Center Crosshair */
-.center-crosshair {
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 10; /* Above video, below overlay box */
-}
-.center-crosshair::before,
-.center-crosshair::after {
-    content: '';
-    position: absolute;
-    background-color: rgba(0, 255, 255, 0.7); /* Cyan, semi-transparent */
-    box-shadow: 0 0 5px rgba(0, 255, 255, 0.5); /* Matching glow */
-}
-.center-crosshair::before { /* Vertical line */
-    width: 2px;
-    height: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-}
-.center-crosshair::after { /* Horizontal line */
-    width: 100%;
-    height: 2px;
-    top: 50%;
-    transform: translateY(-50%);
 }
 
-/* Shoulder Lines */
-.shoulder-line {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 2px; /* Thin line */
-    background-color: rgba(0, 191, 255, 0.6); /* Electric blue, semi-transparent */
-    box-shadow: 0 0 5px rgba(0, 191, 255, 0.4); /* Subtle glow */
-    pointer-events: none;
-    z-index: 9; /* Below overlay box */
-    display: none; /* Hidden by default, shown by JS */
+/* Hidden canvas */
+canvas {
+    display: none;
 }
 
-/* Small message for compliance feedback */
-#compliance-message {
-    position: absolute;
-    top: 10px; /* Adjust as needed */
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.85em;
+/* Custom message box styling */
+#custom-message-box-overlay {
+    z-index: 2000;
+}
+#custom-message-box-overlay .modal-content {
+    background-color: #0A0A0A;
+    border: 1px solid #00BFFF; /* Electric Blue border */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.9);
+    padding: 20px;
+}
+#custom-message-box-overlay h3 {
+    color: #00FFFF; /* Cyan for prominence */
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+#custom-message-box-overlay p {
     color: #E0E0E0;
-    background-color: rgba(0, 0, 0, 0.6);
-    padding: 5px 10px;
-    border-radius: 4px;
-    z-index: 15;
-    display: none; /* Hidden by default */
-    min-width: 150px; /* Ensure space for messages */
-    text-align: center;
+    font-size: 0.85em;
+    margin-bottom: 15px;
 }
-.compliance-green { color: #00FF00; }
-.compliance-yellow { color: #FFFF00; }
-.compliance-red { color: #FF0000; }
+#custom-message-box-overlay .modal-button-group button { /* Targeting the OK button specifically */
+    background-color: #4A4A4A;
+    border-color: #00BFFF; /* Electric Blue border */
+}
+#custom-message-box-overlay .modal-button-group button:hover:not(:disabled) {
+     background-color: #606060;
+     box-shadow: 0 0 8px rgba(0, 173, 239, 0.3);
+}

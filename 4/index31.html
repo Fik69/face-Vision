@@ -14,13 +14,7 @@
 
     <div id="video-container" class="relative w-[98vw] sm:w-[70vw] max-w-xl aspect-video bg-neutral-950 rounded-sm overflow-hidden mb-8 shadow-xl flex justify-center items-center border border-neutral-700">
         <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
-        <div id="overlay-box" class="absolute box-border pointer-events-none hidden rounded-sm"></div>
-
-        <!-- New static guides -->
-        <div class="center-crosshair"></div>
-        <div id="shoulder-line-top" class="shoulder-line"></div>
-        <div id="shoulder-line-bottom" class="shoulder-line"></div>
-        <div id="compliance-message" class="text-xs"></div>
+        <div id="overlay-box" class="absolute border-2 border-lime-400 box-border pointer-events-none hidden rounded-sm"></div>
     </div>
 
     <div class="controls-container w-[98vw] max-w-2xl">
@@ -31,7 +25,7 @@
         <div class="select-group-container">
             <div class="select-group-row">
                 <div class="select-item">
-                    <label for="resolution-select" class="select-label">Output Res:</label>
+                    <label for="resolution-select" class="select-label">Resolution:</label>
                     <select id="resolution-select" disabled></select>
                 </div>
                  <div class="select-item">
@@ -42,23 +36,10 @@
         </div>
 
         <h3>Developer Settings</h3>
-        <!-- NEW: Viewfinder Resolution Controls -->
-        <div class="slider-group">
-            <label for="viewfinder-res-width-slider">Viewfinder Width: <input type="number" id="viewfinder-res-width-number" min="320" max="1920" step="160" value="1280" disabled></label>
-            <input type="range" id="viewfinder-res-width-slider" min="320" max="1920" step="160" value="1280" disabled>
-            <p class="slider-note">*Width for camera stream. Affects stream quality & perf.</p>
-        </div>
-        <div class="slider-group">
-            <label for="viewfinder-aspect-ratio-slider">Viewfinder Aspect Ratio: <input type="number" id="viewfinder-aspect-ratio-number" min="0.5" max="2.0" step="0.01" value="1.33" disabled></label>
-            <input type="range" id="viewfinder-aspect-ratio-slider" min="0.5" max="2.0" step="0.01" value="1.33" disabled>
-            <p class="slider-note">*Width/Height. e.g., 1.33 (4:3), 1.77 (16:9).</p>
-        </div>
-
-
         <div class="slider-group">
             <label for="input-size-slider">Input Size: <input type="number" id="input-size-number" min="128" max="608" step="32" value="224" disabled></label>
             <input type="range" id="input-size-slider" min="128" max="608" step="32" value="224" disabled>
-            <p class="slider-note">*Multiple of 32. For AI model processing.</p>
+            <p class="slider-note">*Multiple of 32.</p>
         </div>
 
         <div class="slider-group">
@@ -84,16 +65,13 @@
             <input type="range" id="face-scale-slider" min="0.5" max="0.9" step="0.01" value="0.75" disabled>
             <p class="slider-note">Ratio of photo height for face height.</p>
         </div>
-
-        <button id="apply-dev-settings-button" disabled class="controls-action-button">Apply Developer Settings</button>
     </div>
 
     <canvas id="hidden-canvas" class="hidden"></canvas>
 
     <div id="photo-modal" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-button-x">&times;</button>
-            <div class="modal-details">
+            <button class="modal-close-button-x">&times;</button> <div class="modal-details">
                 <p id="modal-country-spec"></p>
                 <p id="modal-resolution-spec"></p>
             </div>
@@ -101,8 +79,7 @@
             <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
 
             <div class="modal-button-group">
-                <button id="download-button" class="download-button">Download Photo</button>
-                <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
+                <button id="download-button" class="download-button">Download Photo</button> <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
             </div>
             <div class="modal-controls">
                 <select id="country-select-modal"></select>
@@ -113,16 +90,14 @@
 
     <div id="custom-message-box-overlay" class="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close-button-x">&times;</button>
-            <h3>Information</h3>
+            <button class="modal-close-button-x">&times;</button> <h3>Information</h3>
             <p></p>
             <div class="modal-button-group">
-                 <button>OK</button>
-            </div>
+                 <button>OK</button> </div>
         </div>
     </div>
 
-    <script src="/face-api.js/dist/face-api.min.js"></script>
-    <script src="/js/moDev.js"></script>
+    <!-- Removed direct face-api.js import from main thread -->
+    <script src="js/moDev.js"></script>
 </body>
 </html>
