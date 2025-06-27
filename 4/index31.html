@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Passport Photo Maker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/black1.css">
+</head>
+<body class="bg-black text-gray-200 flex flex-col items-center justify-start min-h-screen px-1 pb-4 pt-1 sm:p-5">
+    <h1 class="text-neutral-300 mt-1 mb-1 text-xl sm:text-2xl font-bold uppercase tracking-widest text-shadow-md">Passport Photo Maker</h1>
+    <div id="loading-message" class="text-gray-400 text-sm sm:text-base mb-3">Loading camera and models...</div>
+
+    <div id="video-container" class="relative w-[98vw] sm:w-[70vw] max-w-xl aspect-video bg-neutral-950 rounded-sm overflow-hidden mb-8 shadow-xl flex justify-center items-center border border-neutral-700">
+        <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
+        <div id="overlay-box" class="absolute box-border pointer-events-none hidden rounded-sm"></div>
+
+        <!-- New static guides -->
+        <div class="center-crosshair"></div>
+        <div id="shoulder-line-top" class="shoulder-line"></div>
+        <div id="shoulder-line-bottom" class="shoulder-line"></div>
+        <div id="compliance-message" class="text-xs"></div>
+    </div>
+
+    <div class="controls-container w-[98vw] max-w-2xl">
+        <button id="capture-button" disabled class="primary-button">Capture Photo</button>
+        <button id="switch-camera-button" disabled class="controls-action-button">Switch Camera</button>
+        <button id="toggle-detection-button" disabled class="controls-action-button">Pause Detector</button>
+
+        <div class="select-group-container">
+            <div class="select-group-row">
+                <div class="select-item">
+                    <label for="resolution-select" class="select-label">Output Res:</label>
+                    <select id="resolution-select" disabled></select>
+                </div>
+                 <div class="select-item">
+                    <label for="country-select" class="select-label">Country/Type:</label>
+                    <select id="country-select" disabled></select>
+                </div>
+            </div>
+        </div>
+
+        <h3>Developer Settings</h3>
+        <!-- NEW: Viewfinder Resolution Controls -->
+        <div class="slider-group">
+            <label for="viewfinder-res-width-slider">Viewfinder Width: <input type="number" id="viewfinder-res-width-number" min="320" max="1920" step="160" value="1280" disabled></label>
+            <input type="range" id="viewfinder-res-width-slider" min="320" max="1920" step="160" value="1280" disabled>
+            <p class="slider-note">*Width for camera stream. Affects stream quality & perf.</p>
+        </div>
+        <div class="slider-group">
+            <label for="viewfinder-aspect-ratio-slider">Viewfinder Aspect Ratio: <input type="number" id="viewfinder-aspect-ratio-number" min="0.5" max="2.0" step="0.01" value="1.33" disabled></label>
+            <input type="range" id="viewfinder-aspect-ratio-slider" min="0.5" max="2.0" step="0.01" value="1.33" disabled>
+            <p class="slider-note">*Width/Height. e.g., 1.33 (4:3), 1.77 (16:9).</p>
+        </div>
+
+
+        <div class="slider-group">
+            <label for="input-size-slider">Input Size: <input type="number" id="input-size-number" min="128" max="608" step="32" value="224" disabled></label>
+            <input type="range" id="input-size-slider" min="128" max="608" step="32" value="224" disabled>
+            <p class="slider-note">*Multiple of 32. For AI model processing.</p>
+        </div>
+
+        <div class="slider-group">
+            <label for="score-threshold-slider">Score Threshold: <input type="number" id="score-threshold-number" min="0.05" max="0.95" step="0.05" value="0.5" disabled></label>
+            <input type="range" id="score-threshold-slider" min="0.05" max="0.95" step="0.05" value="0.5" disabled>
+            <p class="slider-note">Min confidence for detection.</p>
+        </div>
+
+        <div class="slider-group">
+            <label for="skip-frames-slider">Detector Every Nth Frame: <input type="number" id="skip-frames-number" min="0" max="10" step="1" value="2" disabled></label>
+            <input type="range" id="skip-frames-slider" min="0" max="10" step="1" value="2" disabled>
+            <p class="slider-note">*0 = Every Frame.</p>
+        </div>
+
+        <div class="slider-group">
+            <label for="height-above-head-slider">Height Above Head (Ratio): <input type="number" id="height-above-head-number" min="0.0" max="0.5" step="0.01" value="0.10" disabled></label>
+            <input type="range" id="height-above-head-slider" min="0.0" max="0.5" step="0.01" value="0.10" disabled>
+            <p class="slider-note">Ratio of photo height for space above head.</p>
+        </div>
+
+        <div class="slider-group">
+            <label for="face-scale-slider">Face Scale (Height Ratio): <input type="number" id="face-scale-number" min="0.5" max="0.9" step="0.01" value="0.75" disabled></label>
+            <input type="range" id="face-scale-slider" min="0.5" max="0.9" step="0.01" value="0.75" disabled>
+            <p class="slider-note">Ratio of photo height for face height.</p>
+        </div>
+
+        <button id="apply-dev-settings-button" disabled class="controls-action-button">Apply Developer Settings</button>
+    </div>
+
+    <canvas id="hidden-canvas" class="hidden"></canvas>
+
+    <div id="photo-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button-x">&times;</button>
+            <div class="modal-details">
+                <p id="modal-country-spec"></p>
+                <p id="modal-resolution-spec"></p>
+            </div>
+            <h2 id="modal-title">Your Passport Photo:</h2>
+            <img id="modal-passport-photo" src="" alt="Generated Passport Photo">
+
+            <div class="modal-button-group">
+                <button id="download-button" class="download-button">Download Photo</button>
+                <button id="reprocess-button" class="reprocess-button">Re-process Photo</button>
+            </div>
+            <div class="modal-controls">
+                <select id="country-select-modal"></select>
+                <select id="resolution-select-modal"></select>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-message-box-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button-x">&times;</button>
+            <h3>Information</h3>
+            <p></p>
+            <div class="modal-button-group">
+                 <button>OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/face-api.js/dist/face-api.min.js"></script>
+    <script src="/js/moDev.js"></script>
+</body>
+</html>
